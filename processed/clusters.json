@@ -1,0 +1,38 @@
+[
+  {
+    "cluster_id": 0,
+    "O": 75.8,
+    "C": 70.7,
+    "E": 62.1,
+    "A": 77.5,
+    "N": 35.5,
+    "size_pct": 36.2,
+    "name": "The Flourisher",
+    "tag": "STABIL · SOSIAL · TERORGANISIR",
+    "desc": "Kamu adalah tipe yang berkembang dengan baik secara psikologis. Stabil secara emosional, terorganisir, hangat, dan nyaman berinteraksi sosial. Kamu cenderung optimistis dan mampu menjaga keseimbangan hidup dengan baik."
+  },
+  {
+    "cluster_id": 1,
+    "O": 75.6,
+    "C": 48.1,
+    "E": 50.6,
+    "A": 75.7,
+    "N": 67.3,
+    "size_pct": 31.5,
+    "name": "The Sensitive",
+    "tag": "EMPATIK · KREATIF · INTENS",
+    "desc": "Kamu memiliki kepekaan emosional yang tinggi dan empati yang dalam. Kreativitas dan keterbukaan pikiranmu adalah kekuatan besar, meski intensitas perasaanmu kadang bisa menjadi tantangan tersendiri."
+  },
+  {
+    "cluster_id": 2,
+    "O": 62.3,
+    "C": 57.1,
+    "E": 32.8,
+    "A": 54.1,
+    "N": 54.7,
+    "size_pct": 32.4,
+    "name": "The Reserved",
+    "tag": "MANDIRI · REFLEKTIF · SELEKTIF",
+    "desc": "Kamu adalah tipe yang lebih memilih kedalaman daripada keluasan. Introvert dan selektif dalam hubungan sosial, kamu memproses dunia dengan cara yang tenang dan penuh pertimbangan."
+  }
+]
