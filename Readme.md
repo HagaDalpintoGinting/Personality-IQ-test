@@ -2,7 +2,7 @@
 
 Aplikasi desktop Python untuk mengukur **estimasi IQ** dan **profil kepribadian Big Five (OCEAN)** — semua hasil dibandingkan dengan data populasi riil dari dataset akademik tervalidasi.
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue) ![PyQt5](https://img.shields.io/badge/PyQt5-5.15+-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Python](https://img.shields.io/badge/Python-3.8+-blue) ![PyQt5](https://img.shields.io/badge/PyQt5-5.15+-green) ![Version](https://img.shields.io/badge/Version-4.0-purple) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
 
@@ -15,6 +15,7 @@ Aplikasi desktop Python untuk mengukur **estimasi IQ** dan **profil kepribadian 
 - [Alur Penggunaan Aplikasi](#-alur-penggunaan-aplikasi)
 - [Metodologi Penilaian](#-metodologi-penilaian)
 - [Teknologi yang Digunakan](#-teknologi-yang-digunakan)
+- [Changelog](#-changelog)
 
 ---
 
@@ -22,13 +23,21 @@ Aplikasi desktop Python untuk mengukur **estimasi IQ** dan **profil kepribadian 
 
 | Fitur | Detail |
 |---|---|
-| 🧠 **Tes IQ** | 40 soal standar Mensa-style: deret angka, analogi verbal, logika, numerik, pola visual |
+| 🧠 **Tes IQ** | 40 soal: deret angka, analogi verbal, logika, numerik, pola visual |
 | 🎭 **Tes Kepribadian** | 50 soal Big Five IPIP standar (10 per trait OCEAN) |
+| 🌐 **Bilingual EN/ID** | Toggle bahasa di setiap halaman — soal, opsi, penjelasan, dan seluruh UI ikut berubah |
+| ⚖️ **Weighted IQ Scoring** | Soal difficulty 1–7 dipakai sebagai bobot — lebih akurat dari % benar biasa |
+| 🧩 **Cognitive Profile** | Breakdown 5 domain kognitif: Fluid, Crystallized, Abstract, Quantitative, Spatial |
+| 🏷️ **Expert Archetype** | 14 tipe kepribadian dari kombinasi skor OCEAN |
+| 🔗 **Combined IQ × Personality** | 7 profil gabungan IQ dan kepribadian (misal: "Architect of Ideas") |
+| 💼 **Career Recommendations** | Top 5 karir dengan confidence bar berdasarkan profil lengkap |
+| 📚 **Learning Style** | Visual / Auditory / Reading-Writing / Kinesthetic + tips praktis |
+| ⚠️ **Blind Spots** | Hingga 4 risiko personal dengan saran mitigasi konkret |
+| 🗓️ **Development Roadmap** | Rencana pengembangan diri 3 bulan yang dipersonalisasi |
 | ⏱️ **Timer IQ** | Countdown 20 menit — sesuai standar tes IQ internasional |
-| 🔀 **Soal Diacak** | Urutan soal berbeda setiap sesi |
 | 📊 **Percentile Populasi** | Hasil dibandingkan dengan 874.434+ responden dataset riil |
-| 🔍 **Review Jawaban** | Accordion review setiap soal IQ beserta penjelasan |
-| 📄 **Export PDF** | Laporan lengkap: skor IQ, review jawaban, profil OCEAN |
+| 🔍 **Review Jawaban** | Accordion per soal IQ + penjelasan bilingual |
+| 📄 **PDF 2-in-1** | Executive Summary (2 hal) + Full Report 7 seksi |
 | 🎨 **UI Dual-Tone** | Sidebar gelap + konten terang, animasi fade antar soal |
 
 ---
@@ -38,49 +47,57 @@ Aplikasi desktop Python untuk mengukur **estimasi IQ** dan **profil kepribadian 
 ```
 BigFive/
 │
-├── app.py                  ← Aplikasi utama (entry point)
+├── app.py                    ← Aplikasi utama (entry point)
 │
-├── data/                   ← Dataset mentah (perlu didownload, lihat bawah)
-│   ├── data-final.csv      ← Tunguz Big Five (Kaggle) — 1.015.341 baris
-│   ├── data-iq-alpha.csv   ← Open Psychometrics IQ Alpha — 3.194 baris
-│   └── VIQT_data.csv       ← Vocabulary IQ Test — 12.173 baris
+├── engine/                   ← Expert rule engine
+│   ├── __init__.py
+│   ├── scoring.py            ← Weighted IQ scoring + cognitive profile
+│   └── expert_rules.py       ← 6-layer expert engine (archetype → roadmap)
 │
-├── processed/              ← File hasil preprocessing (di-generate otomatis)
-│   ├── norms.json          ← Tabel percentile Big Five per skor
-│   ├── clusters.json       ← Centroid KMeans + label archetype
-│   ├── scaler.json         ← Parameter StandardScaler
-│   └── iq_norms.json       ← Tabel norma IQ dari dataset riil
+├── i18n/                     ← File teks bilingual
+│   ├── id.json               ← Semua teks UI Bahasa Indonesia
+│   └── en.json               ← Semua teks UI English
 │
-├── explore.py              ← Eksplorasi dataset Big Five
-├── process.py              ← Generate norms.json dari dataset
-├── model.py                ← KMeans clustering (k=3)
-├── label.py                ← Labeling cluster archetype
-├── explore_iq.py           ← Eksplorasi dataset IQ
-└── process_iq.py           ← Generate iq_norms.json dari dataset
+├── report/                   ← PDF generator
+│   ├── __init__.py
+│   └── pdf_generator.py      ← ReportLab 2-in-1 PDF builder
+│
+├── data/                     ← Dataset mentah (perlu didownload)
+│   ├── data-final.csv        ← Tunguz Big Five (Kaggle) — 1.015.341 baris
+│   ├── data-iq-alpha.csv     ← Open Psychometrics IQ Alpha — 3.194 baris
+│   └── VIQT_data.csv         ← Vocabulary IQ Test — 12.173 baris
+│
+├── processed/                ← File hasil preprocessing (di-generate otomatis)
+│   ├── norms.json
+│   ├── clusters.json
+│   ├── scaler.json
+│   └── iq_norms.json
+│
+├── explore.py
+├── process.py
+├── model.py
+├── label.py
+├── explore_iq.py
+└── process_iq.py
 ```
 
 ---
 
 ## 📊 Dataset
 
-Proyek ini menggunakan tiga dataset publik. **Download sebelum menjalankan aplikasi.**
-
 ### 1. Tunguz Big Five Personality (Kaggle)
 - **File:** `data/data-final.csv`
 - **Sumber:** https://www.kaggle.com/datasets/tunguz/big-five-personality-test
-- **Ukuran:** ~1 juta responden, 163 kolom
 - **Digunakan untuk:** Tabel norma percentile OCEAN, clustering archetype
 
 ### 2. Open Psychometrics IQ Alpha
 - **File:** `data/data-iq-alpha.csv`
 - **Sumber:** https://openpsychometrics.org/_rawdata/ → "IQ Test Alpha"
-- **Ukuran:** 3.194 responden, 61 kolom
-- **Digunakan untuk:** Norma IQ populasi riil (mean, std, percentile mapping)
+- **Digunakan untuk:** Norma IQ populasi riil
 
 ### 3. Vocabulary IQ Test (VIQT)
 - **File:** `data/VIQT_data.csv`
 - **Sumber:** https://openpsychometrics.org/_rawdata/ → "Vocabulary IQ Test"
-- **Format:** Tab-separated (TSV)
 - **Digunakan untuk:** Validasi dan normalisasi skor verbal
 
 ---
@@ -90,23 +107,15 @@ Proyek ini menggunakan tiga dataset publik. **Download sebelum menjalankan aplik
 ### Persyaratan Sistem
 - Python **3.8** atau lebih baru
 - OS: Windows 10/11, macOS, atau Linux
-- RAM: minimal 4 GB (untuk loading dataset saat preprocessing)
 
----
-
-### Langkah 1 — Clone / Download Proyek
+### Langkah 1 — Clone Proyek
 
 ```bash
-# Kalau pakai git
 git clone <url-repo-kamu>
 cd BigFive
-
-# Atau extract ZIP ke folder BigFive/
 ```
 
----
-
-### Langkah 2 — Buat Virtual Environment (Direkomendasikan)
+### Langkah 2 — Virtual Environment
 
 ```bash
 # Windows
@@ -118,21 +127,11 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
----
-
 ### Langkah 3 — Install Dependencies
 
 ```bash
 pip install PyQt5 pandas numpy scipy scikit-learn matplotlib reportlab
 ```
-
-Atau kalau ada file `requirements.txt`:
-
-```bash
-pip install -r requirements.txt
-```
-
-**Daftar library yang dibutuhkan:**
 
 | Library | Versi minimum | Fungsi |
 |---|---|---|
@@ -141,67 +140,29 @@ pip install -r requirements.txt
 | `numpy` | 1.21 | Komputasi numerik |
 | `scipy` | 1.7 | Distribusi normal (IQ norma) |
 | `scikit-learn` | 0.24 | KMeans clustering |
-| `matplotlib` | 3.4 | Visualisasi (opsional, untuk explore.py) |
+| `matplotlib` | 3.4 | Visualisasi (opsional) |
 | `reportlab` | 3.6 | Export hasil ke PDF |
 
----
-
 ### Langkah 4 — Download Dataset
-
-Buat folder `data/` di root proyek, lalu download ketiga file dataset:
 
 ```bash
 mkdir data
 ```
 
-1. **Big Five** → Download dari Kaggle (butuh akun):
-   https://www.kaggle.com/datasets/tunguz/big-five-personality-test
-   Simpan sebagai `data/data-final.csv`
-
-2. **IQ Alpha** → Download dari Open Psychometrics:
-   https://openpsychometrics.org/_rawdata/
-   Cari "IQ Test Alpha", extract, simpan sebagai `data/data-iq-alpha.csv`
-
-3. **VIQT** → Dari situs yang sama, cari "Vocabulary IQ Test",
-   simpan sebagai `data/VIQT_data.csv`
-
----
+1. **Big Five** → https://www.kaggle.com/datasets/tunguz/big-five-personality-test → `data/data-final.csv`
+2. **IQ Alpha** → https://openpsychometrics.org/_rawdata/ → "IQ Test Alpha" → `data/data-iq-alpha.csv`
+3. **VIQT** → situs yang sama → "Vocabulary IQ Test" → `data/VIQT_data.csv`
 
 ### Langkah 5 — Generate File Processed
 
-Jalankan pipeline preprocessing secara berurutan. Ini hanya perlu dilakukan **satu kali**.
+Jalankan **satu kali** secara berurutan:
 
 ```bash
-# 1. Eksplorasi dan validasi dataset Big Five (opsional)
-python explore.py
-
-# 2. Generate tabel norma percentile OCEAN
 python process.py
-
-# 3. Jalankan KMeans clustering (k=3 archetype)
 python model.py
-
-# 4. Labeling archetype cluster
 python label.py
-
-# 5. Eksplorasi dataset IQ (opsional)
-python explore_iq.py
-
-# 6. Generate tabel norma IQ
 python process_iq.py
 ```
-
-Setelah selesai, folder `processed/` akan berisi 4 file:
-
-```
-processed/
-├── norms.json       ✓
-├── clusters.json    ✓
-├── scaler.json      ✓
-└── iq_norms.json    ✓
-```
-
----
 
 ### Langkah 6 — Jalankan Aplikasi
 
@@ -209,51 +170,69 @@ processed/
 python app.py
 ```
 
-Aplikasi akan terbuka. Pilih **Tes IQ** atau **Tes Kepribadian** dari halaman utama.
-
 ---
 
 ## 🎮 Alur Penggunaan Aplikasi
 
 ```
-Halaman Utama
+Halaman Utama  [toggle EN/ID]
 ├── [Mulai Tes IQ]
-│   ├── 40 soal (8 per kategori, diacak tiap sesi)
-│   ├── Timer countdown 20 menit di sidebar
-│   ├── Navigasi bebas ← →
+│   ├── 40 soal bilingual (8 per kategori, diacak tiap sesi)
+│   ├── Timer countdown 20 menit
 │   └── Halaman Hasil IQ
 │       ├── Estimasi IQ + kategori + percentile
-│       ├── Breakdown skor per kategori
-│       ├── Review jawaban (accordion, klik untuk expand)
-│       ├── Penjelasan tiap soal
-│       └── [Export PDF] → file .pdf lengkap
+│       ├── Cognitive Profile (5 domain)
+│       ├── Breakdown per kategori + review jawaban
+│       └── [Export PDF 2-in-1]
 │
 └── [Mulai Tes Kepribadian]
-    ├── 50 soal Likert 1–5 (diacak tiap sesi)
-    ├── Indikator trait aktif di sidebar
+    ├── 50 soal Likert bilingual (diacak tiap sesi)
     └── Halaman Hasil Kepribadian
-        ├── Archetype label (The Flourisher / The Sensitive / The Reserved)
-        ├── Percentile card per trait OCEAN
+        ├── Archetype + Combined IQ×Personality Profile
         ├── Radar chart kamu vs populasi
-        ├── Progress bar skor per trait
-        └── Insight personal berbasis kombinasi skor
+        ├── Career Recommendations (top 5)
+        ├── Learning Style + tips
+        ├── Blind Spots & mitigasi
+        ├── Development Roadmap 3 bulan
+        └── [Export PDF 2-in-1]
 ```
+
+---
+
+## 📄 Format PDF 2-in-1
+
+| Halaman | Konten |
+|---|---|
+| 1 | Cover — IQ score, kategori, archetype |
+| 2 | Executive Summary — snapshot semua skor |
+| 3+ | Full Report — 7 seksi lengkap + Appendix |
+
+**7 Seksi:** Cognitive Assessment · Personality Profile · Combined Analysis · Career Recommendations · Learning Style · Blind Spots · 3-Month Roadmap
 
 ---
 
 ## 📐 Metodologi Penilaian
 
 ### IQ
-- **Skoring:** Jumlah jawaban benar → persentase benar → lookup ke tabel norma populasi → estimasi IQ (mean=100, SD=15 via distribusi normal invers)
-- **Norma:** Diambil dari dataset Open Psychometrics IQ Alpha (N=2.051 valid responden setelah cleaning)
-- **Standarisasi:** IQ dikalkulasi via `scipy.stats.norm.ppf(percentile)` sehingga distribusi mengikuti kurva bell internasional
-- **Kategori IQ:** Very Superior (≥130), Superior (≥120), High Average (≥110), Average (90–109), Low Average (80–89), Below Average (70–79), Well Below Avg (<70)
+- **Weighted Scoring:** Difficulty soal (1–7) sebagai bobot — soal sulit berkontribusi lebih besar
+- **Norma:** Open Psychometrics IQ Alpha (N=2.051 valid responden)
+- **Standarisasi:** `scipy.stats.norm.ppf(percentile)` → distribusi bell internasional (mean=100, SD=15)
+- **Kategori:** Very Superior (≥130) · Superior (≥120) · High Average (≥110) · Average (90–109) · Low Average (80–89) · Below Average (70–79) · Well Below Avg (<70)
+
+### Cognitive Profile
+5 domain dipetakan dari kategori soal: Fluid (Deret Angka) · Crystallized (Analogi Verbal) · Abstract (Logika) · Quantitative (Numerik) · Spatial (Pola Visual)
 
 ### Big Five OCEAN
-- **Skoring:** Skala Likert 1–5, item reverse-scored dibalik, skor dinormalisasi ke 0–100
-- **Norma:** Percentile dihitung dari 874.434 responden valid dataset Tunguz (setelah cleaning NaN & skor out-of-range)
-- **Clustering:** KMeans k=3 pada skor OCEAN yang di-StandardScaler, menghasilkan 3 archetype kepribadian
-- **Reverse scoring:** Item yang memiliki flag `reverse=True` dihitung sebagai `6 - nilai`
+- **Skoring:** Likert 1–5, reverse-scored item dibalik, dinormalisasi ke 0–100
+- **Norma:** 874.434 responden valid dataset Tunguz
+
+### Expert Engine (6 Layer)
+1. **Archetype** — 14 tipe dari kombinasi OCEAN
+2. **Combined Profile** — 7 profil IQ × Personality
+3. **Career** — 15 karir dengan weighted confidence score
+4. **Learning Style** — VARK inferred dari OCEAN + cognitive
+5. **Blind Spots** — 11 rule → max 4 per user
+6. **Roadmap** — 3 bulan aksi dipersonalisasi
 
 ---
 
@@ -262,20 +241,38 @@ Halaman Utama
 | Komponen | Teknologi |
 |---|---|
 | GUI | PyQt5 (QStackedWidget, custom widgets, QPropertyAnimation) |
+| Expert Engine | Pure Python rule-based (6 layer) |
+| Bilingual | JSON i18n (id.json / en.json) |
 | Data Processing | pandas, numpy |
 | Machine Learning | scikit-learn (KMeans, StandardScaler) |
-| Statistik | scipy.stats (norm.ppf untuk IQ norma) |
-| PDF Export | ReportLab (Platypus flowables) |
+| Statistik | scipy.stats |
+| PDF Export | ReportLab Platypus (2-in-1) |
 | Visualisasi | QPainter custom (RadarWidget, AnimatedBar, CountdownTimer) |
 
 ---
 
-## 📝 Catatan
+## 📌 Changelog
 
-- File `processed/` **tidak perlu** di-generate ulang setelah pertama kali, kecuali kamu mengubah dataset atau parameter clustering.
-- Soal IQ dan Big Five **diacak tiap sesi** — urutan akan berbeda setiap kamu mulai tes baru.
-- Timer IQ mengikuti standar internasional: **total waktu** (bukan per soal). Saat waktu habis, jawaban yang sudah diisi akan otomatis di-submit.
-- Export PDF mencakup hasil IQ **dan** Big Five jika keduanya sudah dikerjakan dalam sesi yang sama.
+### v4.0
+- Bilingual EN/ID — semua soal, opsi, penjelasan, dan UI teks
+- Weighted IQ scoring berdasarkan difficulty soal
+- Cognitive Profile 5 domain
+- Expert Rule Engine 6 layer
+- PDF 2-in-1: Executive Summary + Full Report 7 seksi
+- Fix: crash saat toggle bahasa di halaman utama
+- Fix: `QWidget: Must construct a QApplication before a QWidget`
+
+### v3.0
+- Dual-tone UI, animated bars, radar chart
+- Accordion review jawaban IQ
+- Export PDF dasar
+
+### v2.0
+- Integrasi tes IQ + Big Five dalam satu aplikasi
+- Percentile berbasis dataset riil
+
+### v1.0
+- Tes Big Five OCEAN dengan norma Kaggle Tunguz
 
 ---
 
@@ -291,5 +288,5 @@ Halaman Utama
 
 ---
 
-*Dataset: Tunguz Big Five (Kaggle) · Open Psychometrics IQ Alpha · VIQT*
+*Dataset: Tunguz Big Five (Kaggle) · Open Psychometrics IQ Alpha · VIQT*  
 *Aplikasi ini bersifat edukatif dan bukan pengganti asesmen psikologis profesional.*
