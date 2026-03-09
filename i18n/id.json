@@ -1,0 +1,153 @@
+{
+  "app_title": "Assessment IQ & Kepribadian",
+  "lang_toggle": "EN",
+
+  "home": {
+    "badge": "ASSESSMENT PSIKOLOGIS · BERBASIS DATA RIIL",
+    "title": "Kenali Dirimu\nLebih Dalam",
+    "subtitle": "Pilih jenis tes yang ingin kamu lakukan. Semua hasil dibandingkan\ndengan data populasi riil dari dataset akademik tervalidasi.",
+    "iq_title": "Tes IQ",
+    "iq_desc": "40 soal standar Mensa-style\nDeret angka, analogi verbal,\nlogika, numerik & pola visual",
+    "iq_time": "Waktu: 20 menit total",
+    "iq_btn": "Mulai Tes IQ",
+    "bf_title": "Tes Kepribadian",
+    "bf_desc": "50 soal Big Five IPIP standar\n10 soal per trait OCEAN\nHasil dengan percentile populasi",
+    "bf_time": "Waktu: ~10 menit",
+    "bf_btn": "Mulai Tes Kepribadian"
+  },
+
+  "iq_test": {
+    "sidebar_title": "TES IQ",
+    "time_label": "Sisa Waktu",
+    "back_home": "← Beranda",
+    "prev": "← Kembali",
+    "next": "Lanjut →",
+    "finish": "Lihat Hasil →",
+    "total_time": 1200
+  },
+
+  "bf_test": {
+    "sidebar_title": "TES KEPRIBADIAN",
+    "back_home": "← Beranda",
+    "prev": "← Kembali",
+    "next": "Lanjut →",
+    "finish": "Lihat Hasil →",
+    "scale_left": "Sangat Tidak Setuju",
+    "scale_mid": "Netral",
+    "scale_right": "Sangat Setuju"
+  },
+
+  "iq_result": {
+    "sidebar_title": "HASIL TES IQ",
+    "badge": "ESTIMASI IQ · BERBASIS DATA RIIL",
+    "percentile_label": "Persentil ke-",
+    "export_btn": "Export PDF  ↓",
+    "restart_btn": "Ulangi Tes IQ  ↺",
+    "home_btn": "← Beranda",
+    "summary_correct": "Benar",
+    "summary_wrong": "Salah",
+    "summary_total": "Total Soal",
+    "breakdown_title": "RINCIAN PER KATEGORI",
+    "review_title": "REVIEW JAWABAN  ·  Klik soal untuk expand",
+    "review_correct": "Benar",
+    "review_wrong": "Salah",
+    "review_your_answer": "Jawabanmu",
+    "review_correct_answer": "Jawaban benar",
+    "review_your_and_correct": "Jawabanmu & Benar",
+    "explanation_label": "Penjelasan",
+    "insight_title": "INSIGHT",
+    "population_label": "responden dataset riil"
+  },
+
+  "bf_result": {
+    "sidebar_title": "HASIL KEPRIBADIAN",
+    "home_btn": "← Beranda",
+    "restart_btn": "Ulangi Tes  ↺",
+    "percentile_label": "persentil",
+    "radar_title": "RADAR OCEAN — KAMU VS POPULASI",
+    "bars_title": "SKOR & POSISI VS POPULASI",
+    "population_avg": "Populasi",
+    "insight_title": "INSIGHT"
+  },
+
+  "expert": {
+    "cognitive_title": "PROFIL KOGNITIF",
+    "cognitive_subtitle": "Berdasarkan performa per kategori soal IQ",
+    "career_title": "REKOMENDASI KARIR",
+    "career_subtitle": "Berdasarkan kombinasi IQ dan profil OCEAN-mu",
+    "career_confidence": "Kesesuaian",
+    "learning_title": "GAYA BELAJAR",
+    "blindspot_title": "BLIND SPOTS & RISK FACTORS",
+    "roadmap_title": "DEVELOPMENT ROADMAP — 3 BULAN",
+    "roadmap_month": "Bulan",
+    "roadmap_focus": "Fokus",
+    "roadmap_actions": "Aksi",
+    "combined_title": "PROFIL KOMBINASI IQ × KEPRIBADIAN"
+  },
+
+  "pdf": {
+    "title": "Laporan Assessment Psikologis",
+    "generated": "Dibuat pada",
+    "exec_summary": "EXECUTIVE SUMMARY",
+    "full_report": "LAPORAN LENGKAP",
+    "section_cognitive": "1. Asesmen Kognitif",
+    "section_personality": "2. Profil Kepribadian",
+    "section_combined": "3. Analisis Kombinasi IQ × Kepribadian",
+    "section_career": "4. Rekomendasi Karir",
+    "section_learning": "5. Gaya Belajar",
+    "section_blindspot": "6. Blind Spots & Risk Factors",
+    "section_roadmap": "7. Development Roadmap 3 Bulan",
+    "appendix": "Appendix — Skor Mentah & Metodologi",
+    "disclaimer": "Laporan ini merupakan alat self-assessment berbasis data psikometri dan tidak menggantikan asesmen psikologis profesional yang dilakukan oleh psikolog berlisensi.",
+    "created_by": "Dibuat oleh aplikasi Assessment IQ & Kepribadian",
+    "methodology_note": "Metodologi: Skor IQ dikalkulasi via weighted scoring berbasis difficulty parameter dan dinormalisasi menggunakan distribusi normal (mean=100, SD=15) terhadap dataset Open Psychometrics IQ Alpha (N=2.051). Skor Big Five dinormalisasi terhadap dataset IPIP Tunguz (N=874.434). Rekomendasi dihasilkan oleh rule-based expert engine berbasis literatur psikologi.",
+    "month": "Bulan",
+    "week": "Minggu",
+    "confidence": "Kesesuaian",
+    "your_score": "Skor Kamu",
+    "population_avg": "Rata-rata Populasi",
+    "percentile": "Persentil"
+  },
+
+  "iq_categories": {
+    "Very Superior":  "Sangat Superior",
+    "Superior":       "Superior",
+    "High Average":   "Di Atas Rata-rata",
+    "Average":        "Rata-rata",
+    "Low Average":    "Di Bawah Rata-rata",
+    "Below Average":  "Jauh Di Bawah Rata-rata",
+    "Well Below Avg": "Sangat Jauh Di Bawah Rata-rata"
+  },
+
+  "cognitive_abilities": {
+    "fluid":        "Penalaran Cair (Fluid Reasoning)",
+    "crystallized": "Kecerdasan Terkristalisasi",
+    "abstract":     "Penalaran Abstrak",
+    "quantitative": "Penalaran Kuantitatif",
+    "spatial":      "Kecerdasan Spasial"
+  },
+
+  "trait_names": {
+    "O": "Openness",
+    "C": "Conscientiousness",
+    "E": "Extraversion",
+    "A": "Agreeableness",
+    "N": "Neuroticism"
+  },
+
+  "trait_low": {
+    "O": "Konvensional",
+    "C": "Fleksibel",
+    "E": "Introvert",
+    "A": "Kompetitif",
+    "N": "Stabil"
+  },
+
+  "trait_high": {
+    "O": "Imajinatif",
+    "C": "Terorganisir",
+    "E": "Ekstrovert",
+    "A": "Kooperatif",
+    "N": "Sensitif"
+  }
+}
