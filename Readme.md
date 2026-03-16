@@ -111,7 +111,7 @@ BigFive/
 ### Langkah 1 — Clone Proyek
 
 ```bash
-git clone <url-repo-kamu>
+git clone <url repo ini>
 cd BigFive
 ```
 
