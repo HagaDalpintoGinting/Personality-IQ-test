@@ -1,12 +1,6 @@
 """
-report/pdf_generator.py
-─────────────────────────────────────────────────────────────────
-PDF Generator 2-in-1:
-  Halaman 1-2 : EXECUTIVE SUMMARY  (ringkasan, siap dibagikan)
-  Halaman 3+  : FULL REPORT        (7 section lengkap)
-
-Library: ReportLab (Platypus)
-─────────────────────────────────────────────────────────────────
+report/pdf_generator.py — Professional PDF Templates
+IQ Test Summary + Big Five Personality Summary
 """
 
 from reportlab.lib.pagesizes import A4
@@ -15,859 +9,667 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    HRFlowable, PageBreak, KeepTogether
+    HRFlowable, PageBreak, KeepTogether,
 )
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-from reportlab.graphics.shapes import Drawing, Rect, String
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
+from reportlab.graphics.shapes import Drawing, Rect, Wedge, Circle, Line, String
 from reportlab.graphics import renderPDF
 from datetime import datetime
+import math
 
-# ── Warna brand ────────────────────────────────────────────────
-C_DARK     = colors.HexColor('#1e2130')
-C_DARK2    = colors.HexColor('#262b3d')
-C_LIGHT    = colors.HexColor('#f5f6fa')
-C_WHITE    = colors.white
-C_GOLD     = colors.HexColor('#f5a623')
-C_GOLD_LT  = colors.HexColor('#fff3dc')
-C_BLUE     = colors.HexColor('#3b82f6')
-C_GREEN    = colors.HexColor('#27ae60')
-C_RED      = colors.HexColor('#e74c3c')
-C_PURPLE   = colors.HexColor('#8b5cf6')
-C_ORANGE   = colors.HexColor('#f97316')
-C_MUTED    = colors.HexColor('#8890aa')
-C_BORDER   = colors.HexColor('#e2e4ee')
+# ── Palette ────────────────────────────────────────────────────────────────
+C_DARK    = colors.HexColor('#1e2130')
+C_DARK2   = colors.HexColor('#262b3d')
+C_LIGHT   = colors.HexColor('#f5f6fa')
+C_WHITE   = colors.white
+C_GOLD    = colors.HexColor('#f5a623')
+C_BLUE    = colors.HexColor('#3b82f6')
+C_GREEN   = colors.HexColor('#27ae60')
+C_RED     = colors.HexColor('#e74c3c')
+C_PURPLE  = colors.HexColor('#8b5cf6')
+C_ORANGE  = colors.HexColor('#f97316')
+C_MUTED   = colors.HexColor('#8890aa')
+C_BORDER  = colors.HexColor('#e2e4ee')
+C_BG      = colors.HexColor('#f8f9fc')
 
-TRAIT_COLORS_HEX = {
-    'O': '#f97316', 'C': '#3b82f6',
-    'E': '#8b5cf6', 'A': '#27ae60', 'N': '#e74c3c',
+TRAIT_HEX  = {'O':'#f97316','C':'#3b82f6','E':'#8b5cf6','A':'#27ae60','N':'#e74c3c'}
+TRAIT_ID   = {'O':'Keterbukaan','C':'Ketelitian','E':'Ekstraversi','A':'Keramahan','N':'Neurotisisme'}
+TRAIT_EN   = {'O':'Openness','C':'Conscientiousness','E':'Extraversion','A':'Agreeableness','N':'Neuroticism'}
+TRAIT_DESC_ID = {
+    'O': 'Imajinasi, kreativitas, dan keterbukaan terhadap pengalaman baru.',
+    'C': 'Keteraturan, disiplin, dan kemampuan menyelesaikan tugas.',
+    'E': 'Sosiabilitas, antusiasme, dan energi dalam interaksi sosial.',
+    'A': 'Empati, kerja sama, dan kepercayaan terhadap orang lain.',
+    'N': 'Kecenderungan merasakan emosi negatif dan stres.',
 }
-CAT_COLORS_HEX = {
-    'fluid':        '#f97316',
-    'crystallized': '#8b5cf6',
-    'abstract':     '#3b82f6',
-    'quantitative': '#27ae60',
-    'spatial':      '#f5a623',
+TRAIT_DESC_EN = {
+    'O': 'Imagination, creativity, and openness to new experiences.',
+    'C': 'Organization, discipline, and ability to complete tasks.',
+    'E': 'Sociability, enthusiasm, and energy in social interactions.',
+    'A': 'Empathy, cooperation, and trust in others.',
+    'N': 'Tendency to experience negative emotions and stress.',
 }
-IQ_CAT_COLORS = {
-    'Very Superior':  '#f5a623', 'Superior':       '#27ae60',
-    'High Average':   '#3b82f6', 'Average':        '#8b5cf6',
-    'Low Average':    '#f97316', 'Below Average':  '#e74c3c',
-    'Well Below Avg': '#e74c3c',
-}
+COG_HEX   = {'fluid':'#f97316','crystallized':'#8b5cf6','abstract':'#3b82f6','quantitative':'#27ae60','spatial':'#f5a623'}
+COG_ID    = {'fluid':'Penalaran Cair','crystallized':'Kecerdasan Verbal','abstract':'Penalaran Abstrak','quantitative':'Penalaran Kuantitatif','spatial':'Kecerdasan Spasial'}
+COG_EN    = {'fluid':'Fluid Reasoning','crystallized':'Verbal Intelligence','abstract':'Abstract Reasoning','quantitative':'Quantitative Reasoning','spatial':'Spatial Intelligence'}
+LVL_ID    = {'excellent':'Sangat Unggul','high':'Tinggi','above_average':'Di Atas Rata-rata','average':'Rata-rata','below_average':'Di Bawah Rata-rata','developing':'Berkembang','needs_work':'Perlu Latihan'}
+LVL_EN    = {'excellent':'Excellent','high':'High','above_average':'Above Average','average':'Average','below_average':'Below Average','developing':'Developing','needs_work':'Needs Work'}
+IQ_COLORS = {'Very Superior':('#f5a623','#1e2130'),'Superior':('#27ae60','#ffffff'),'High Average':('#3b82f6','#ffffff'),'Average':('#8b5cf6','#ffffff'),'Low Average':('#f97316','#ffffff'),'Below Average':('#e74c3c','#ffffff'),'Well Below Avg':('#e74c3c','#ffffff')}
 
-W_PAGE = A4[0] - 40*mm  # usable width
+W  = A4[0] - 40*mm
+PW = A4[0]
+PH = A4[1]
 
 
-# ══════════════════════════════════════════════════════════════
-# STYLE FACTORY
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
+# STYLES
+# ══════════════════════════════════════════════════════════════════════════════
 def _styles():
-    base = getSampleStyleSheet()
-    def ms(name, parent='Normal', **kw):
-        return ParagraphStyle(name, parent=base[parent], **kw)
-
+    b = getSampleStyleSheet()
+    def ms(n, **kw): return ParagraphStyle(n, parent=b['Normal'], **kw)
     return {
-        'cover_title': ms('ct', fontSize=28, textColor=C_WHITE,
-                          fontName='Helvetica-Bold', alignment=TA_CENTER,
-                          leading=34, spaceAfter=6),
-        'cover_sub':   ms('cs', fontSize=12, textColor=colors.HexColor('#b0b8d0'),
-                          alignment=TA_CENTER, spaceAfter=4),
-        'cover_date':  ms('cd', fontSize=10, textColor=colors.HexColor('#7b82a0'),
-                          alignment=TA_CENTER),
-        'section_badge': ms('sb', fontSize=9, textColor=C_GOLD,
-                            fontName='Helvetica-Bold', letterSpacing=2,
-                            spaceAfter=4),
-        'h1':          ms('h1', fontSize=16, textColor=C_DARK,
-                          fontName='Helvetica-Bold', spaceBefore=14, spaceAfter=8),
-        'h2':          ms('h2', fontSize=12, textColor=C_BLUE,
-                          fontName='Helvetica-Bold', spaceBefore=10, spaceAfter=4),
-        'h3':          ms('h3', fontSize=10, textColor=C_DARK,
-                          fontName='Helvetica-Bold', spaceBefore=6, spaceAfter=3),
-        'body':        ms('bd', fontSize=10, textColor=C_DARK,
-                          leading=16, spaceAfter=6),
-        'body_muted':  ms('bm', fontSize=9, textColor=C_MUTED,
-                          leading=14, spaceAfter=4),
-        'correct':     ms('ok', fontSize=10, textColor=C_GREEN, leading=14),
-        'wrong':       ms('wr', fontSize=10, textColor=C_RED,   leading=14),
-        'gold_note':   ms('gn', fontSize=9,  textColor=colors.HexColor('#7a5200'),
-                          leading=14, spaceAfter=6,
-                          backColor=C_GOLD_LT, borderPadding=6),
-        'disclaimer':  ms('di', fontSize=8,  textColor=C_MUTED,
-                          leading=12, alignment=TA_CENTER),
-        'exec_number': ms('en', fontSize=42, textColor=C_DARK,
-                          fontName='Helvetica-Bold', alignment=TA_CENTER),
-        'exec_label':  ms('el', fontSize=10, textColor=C_MUTED,
-                          alignment=TA_CENTER),
-        'exec_value':  ms('ev', fontSize=13, textColor=C_DARK,
-                          fontName='Helvetica-Bold', alignment=TA_CENTER),
-        'tag':         ms('tg', fontSize=8,  textColor=C_GOLD,
-                          fontName='Helvetica-Bold', letterSpacing=1),
-        'action':      ms('ac', fontSize=9,  textColor=C_DARK,
-                          leading=14, leftIndent=12, spaceAfter=3),
-        'mitigation':  ms('mt', fontSize=9,  textColor=colors.HexColor('#1a4731'),
-                          leading=13, backColor=colors.HexColor('#e8f8f0'),
-                          borderPadding=5, spaceAfter=4),
+        'h1':       ms('h1', fontSize=20, fontName='Helvetica-Bold', textColor=C_DARK, spaceBefore=10, spaceAfter=6, leading=26),
+        'h2':       ms('h2', fontSize=14, fontName='Helvetica-Bold', textColor=C_DARK, spaceBefore=8,  spaceAfter=4, leading=20),
+        'h3':       ms('h3', fontSize=11, fontName='Helvetica-Bold', textColor=C_DARK, spaceBefore=6,  spaceAfter=3),
+        'body':     ms('bd', fontSize=10, textColor=C_DARK,   leading=17, spaceAfter=6,  alignment=TA_JUSTIFY),
+        'muted':    ms('mt', fontSize=9,  textColor=C_MUTED,  leading=14, spaceAfter=4),
+        'small':    ms('sm', fontSize=8,  textColor=C_MUTED,  leading=12),
+        'disc':     ms('di', fontSize=8,  textColor=C_MUTED,  leading=12, alignment=TA_CENTER),
+        'correct':  ms('ok', fontSize=9,  textColor=C_GREEN,  leading=14),
+        'wrong':    ms('wr', fontSize=9,  textColor=C_RED,    leading=14),
+        'tip':      ms('tp', fontSize=9,  textColor=colors.HexColor('#7a5200'), leading=14, backColor=colors.HexColor('#fff8e6'), borderPadding=6, spaceAfter=4),
+        'white':    ms('wh', fontSize=10, textColor=C_WHITE,  leading=15),
+        'white_b':  ms('wb', fontSize=13, fontName='Helvetica-Bold', textColor=C_WHITE, leading=18),
+        'tag':      ms('tg', fontSize=8,  fontName='Helvetica-Bold', textColor=C_GOLD, letterSpacing=2),
+        'center':   ms('c',  fontSize=10, textColor=C_DARK,   alignment=TA_CENTER),
+        'action':   ms('ac', fontSize=9,  textColor=C_DARK,   leading=14, leftIndent=10, spaceAfter=2),
     }
 
 
-# ══════════════════════════════════════════════════════════════
-# MINI WIDGETS (drawn with ReportLab Drawing)
-# ══════════════════════════════════════════════════════════════
-def _bar_drawing(pct, color_hex, width=W_PAGE - 20*mm, height=8):
-    """Horizontal progress bar."""
-    d = Drawing(width, height + 4)
-    # Background
-    d.add(Rect(0, 2, width, height,
-               fillColor=C_BORDER, strokeColor=None, rx=4, ry=4))
+# ══════════════════════════════════════════════════════════════════════════════
+# DRAWING HELPERS
+# ══════════════════════════════════════════════════════════════════════════════
+def _bar(pct: float, hex_color: str, w=None, h=10) -> Drawing:
+    """Progress bar dengan rounded corners dan label %."""
+    bw = w or W
+    d  = Drawing(bw, h + 2)
+    # Track
+    d.add(Rect(0, 1, bw, h, fillColor=C_BORDER, strokeColor=None, rx=h//2, ry=h//2))
     # Fill
-    fill_w = max(4, int(width * pct / 100))
-    d.add(Rect(0, 2, fill_w, height,
-               fillColor=colors.HexColor(color_hex),
-               strokeColor=None, rx=4, ry=4))
+    fw = max(h, int(bw * min(pct,100) / 100))
+    d.add(Rect(0, 1, fw, h, fillColor=colors.HexColor(hex_color), strokeColor=None, rx=h//2, ry=h//2))
     return d
 
-
-def _confidence_bar(pct, color_hex, label, width=W_PAGE * 0.55):
-    """Bar dengan label confidence % di kanan."""
-    d = Drawing(width, 14)
-    bg_w = width - 50
-    d.add(Rect(0, 3, bg_w, 8,
-               fillColor=C_BORDER, strokeColor=None, rx=4, ry=4))
-    fill_w = max(4, int(bg_w * pct / 100))
-    d.add(Rect(0, 3, fill_w, 8,
-               fillColor=colors.HexColor(color_hex),
-               strokeColor=None, rx=4, ry=4))
-    d.add(String(bg_w + 6, 3, f'{pct}%',
-                 fontSize=9, fillColor=colors.HexColor(color_hex),
-                 fontName='Helvetica-Bold'))
+def _donut(pct: float, hex_color: str, size=60) -> Drawing:
+    """Mini donut chart untuk skor."""
+    d   = Drawing(size, size)
+    cx  = cy = size / 2
+    r   = size * 0.38
+    t   = size * 0.22
+    # Background circle
+    d.add(Wedge(cx, cy, r, 0, 360, fillColor=C_BORDER, strokeColor=None, strokeWidth=0))
+    d.add(Wedge(cx, cy, r-t, 0, 360, fillColor=C_WHITE, strokeColor=None, strokeWidth=0))
+    # Fill arc
+    deg = pct * 3.6
+    if deg > 0:
+        d.add(Wedge(cx, cy, r, 90, 90-deg, fillColor=colors.HexColor(hex_color), strokeColor=None, strokeWidth=0))
+        d.add(Wedge(cx, cy, r-t, 90, 90-deg, fillColor=C_WHITE, strokeColor=None, strokeWidth=0))
+    # Center text
+    d.add(String(cx, cy-4, f'{pct:.0f}', fontSize=int(size*0.22),
+                 fontName='Helvetica-Bold', fillColor=colors.HexColor(hex_color),
+                 textAnchor='middle'))
     return d
 
-
-def _cover_block():
-    """Dark cover block (full-width table row)."""
-    return None   # handled inline via Table background
-
-
-# ══════════════════════════════════════════════════════════════
-# SECTION BUILDERS
-# ══════════════════════════════════════════════════════════════
-def _divider(story, label='', color=C_BORDER):
-    if label:
-        story.append(Spacer(1, 4*mm))
-        story.append(HRFlowable(width=W_PAGE, thickness=1,
-                                color=color, spaceAfter=2))
-    else:
-        story.append(HRFlowable(width=W_PAGE, thickness=0.5,
-                                color=color, spaceAfter=4))
-
-
-def _section_header(story, number, title, styles):
-    data = [[Paragraph(f'<b>{number}</b>', ParagraphStyle(
-                'sn', fontSize=11, textColor=C_WHITE,
-                fontName='Helvetica-Bold', alignment=TA_CENTER)),
-             Paragraph(title, ParagraphStyle(
-                'st', fontSize=12, textColor=C_WHITE,
-                fontName='Helvetica-Bold', leftIndent=4))]]
-    t = Table(data, colWidths=[8*mm, W_PAGE - 8*mm])
+def _section_bar(story, title: str, hex_color: str):
+    """Section header — accent color bar."""
+    t = Table([[Paragraph(f'<b>{title}</b>',
+        ParagraphStyle('sh', fontSize=12, fontName='Helvetica-Bold',
+                       textColor=colors.HexColor(hex_color)))]],
+        colWidths=[W])
     t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), C_DARK),
-        ('VALIGN',     (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 7),
+        ('BACKGROUND',    (0,0), (-1,-1), C_LIGHT),
+        ('TOPPADDING',    (0,0), (-1,-1), 7),
         ('BOTTOMPADDING', (0,0), (-1,-1), 7),
-        ('LEFTPADDING', (0,0), (0,0), 6),
+        ('LEFTPADDING',   (0,0), (-1,-1), 12),
+        ('LINEBELOW',     (0,0), (-1,-1), 2, colors.HexColor(hex_color)),
     ]))
-    story.append(Spacer(1, 4*mm))
+    story.append(Spacer(1, 5*mm))
     story.append(t)
     story.append(Spacer(1, 3*mm))
 
+def _divider(story):
+    story.append(HRFlowable(width=W, thickness=0.5, color=C_BORDER, spaceBefore=4, spaceAfter=6))
 
-def _kv_table(story, rows, col_widths=None):
-    """Tabel key-value sederhana."""
-    if not col_widths:
-        col_widths = [W_PAGE * 0.38, W_PAGE * 0.62]
-    tbl = Table(rows, colWidths=col_widths)
-    tbl.setStyle(TableStyle([
-        ('FONTSIZE',      (0,0), (-1,-1), 9),
-        ('TEXTCOLOR',     (0,0), (0,-1), C_MUTED),
-        ('TEXTCOLOR',     (1,0), (1,-1), C_DARK),
-        ('FONTNAME',      (1,0), (1,-1), 'Helvetica-Bold'),
-        ('ROWBACKGROUNDS',(0,0), (-1,-1),
-         [C_LIGHT, C_WHITE]),
-        ('TOPPADDING',    (0,0), (-1,-1), 5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-        ('LEFTPADDING',   (0,0), (-1,-1), 8),
-        ('GRID',          (0,0), (-1,-1), 0.3, C_BORDER),
+def _info_chip(label: str, value: str, hex_color: str) -> Table:
+    """Chip kecil untuk stats."""
+    t = Table([[
+        Paragraph(value, ParagraphStyle('cv', fontSize=18, fontName='Helvetica-Bold',
+                                        textColor=colors.HexColor(hex_color), alignment=TA_CENTER)),
+        Paragraph(label, ParagraphStyle('cl', fontSize=8, textColor=C_MUTED,
+                                        alignment=TA_CENTER)),
+    ]], colWidths=[W/4])
+    t.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0), (-1,-1), colors.HexColor(hex_color+'15')),
+        ('BOX',           (0,0), (-1,-1), 1, colors.HexColor(hex_color+'44')),
+        ('ROUNDEDCORNERS',[8]),
+        ('TOPPADDING',    (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+        ('ROWSPAN',       (0,0), (0,1)),
     ]))
-    story.append(tbl)
-    story.append(Spacer(1, 3*mm))
+    return t
 
 
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # COVER PAGE
-# ══════════════════════════════════════════════════════════════
-def _build_cover(story, data, txt, styles):
-    # Full-dark cover via large table
-    iq      = data.get('iq', '—')
-    label   = data.get('label', '—')
-    lang    = data.get('lang', 'id')
-    date_str = datetime.now().strftime('%d %B %Y  ·  %H:%M')
-
-    label_localized = txt['iq_categories'].get(label, label)
-    iq_color = IQ_CAT_COLORS.get(label, '#8b5cf6')
-
-    cover_data = [[
-        Paragraph(txt['pdf']['title'], styles['cover_title']),
-    ],[
-        Paragraph(date_str, styles['cover_date']),
-    ],[
-        Spacer(1, 8*mm),
-    ],[
-        Paragraph(str(iq), ParagraphStyle('ciq', fontSize=64,
-            textColor=colors.HexColor(iq_color),
-            fontName='Helvetica-Bold', alignment=TA_CENTER)),
-    ],[
-        Paragraph(label_localized, ParagraphStyle('clbl', fontSize=16,
-            textColor=C_WHITE, fontName='Helvetica-Bold',
-            alignment=TA_CENTER, spaceAfter=2)),
-    ],[
-        Paragraph('IQ ESTIMATE', ParagraphStyle('cest', fontSize=9,
-            textColor=colors.HexColor('#7b82a0'), letterSpacing=2,
-            alignment=TA_CENTER)),
-    ],[
-        Spacer(1, 6*mm),
-    ]]
-
-    # Archetype row if available
-    arch = data.get('archetype')
-    if arch:
-        cover_data.append([
-            Paragraph(arch.get('tag', ''), ParagraphStyle('ctag', fontSize=9,
-                textColor=C_GOLD, fontName='Helvetica-Bold',
-                letterSpacing=2, alignment=TA_CENTER)),
-        ])
-        cover_data.append([
-            Paragraph(arch.get('name', ''), ParagraphStyle('cname', fontSize=18,
-                textColor=C_WHITE, fontName='Helvetica-Bold',
-                alignment=TA_CENTER)),
-        ])
-
-    cover_data.append([Spacer(1, 10*mm)])
-    cover_data.append([
-        Paragraph(txt['pdf']['created_by'], styles['cover_date']),
-    ])
-
-    tbl = Table(cover_data, colWidths=[W_PAGE])
+# ══════════════════════════════════════════════════════════════════════════════
+def _cover(story, title: str, subtitle: str, hero_text: str,
+           hero_sub: str, meta: str, accent: str, bg: str):
+    """Universal cover page."""
+    rows = [
+        # Top accent stripe
+        [Table([['']], colWidths=[W], rowHeights=[6],
+               style=[('BACKGROUND',(0,0),(-1,-1),colors.HexColor(accent)),
+                      ('TOPPADDING',(0,0),(-1,-1),0),('BOTTOMPADDING',(0,0),(-1,-1),0)])],
+        [Spacer(1, 12*mm)],
+        [Paragraph(title.upper(),
+                   ParagraphStyle('cvt', fontSize=9, fontName='Helvetica-Bold',
+                                  textColor=colors.HexColor(accent), letterSpacing=3,
+                                  alignment=TA_CENTER))],
+        [Spacer(1, 2*mm)],
+        [Paragraph(subtitle,
+                   ParagraphStyle('cvs', fontSize=22, fontName='Helvetica-Bold',
+                                  textColor=colors.HexColor(bg), alignment=TA_CENTER,
+                                  leading=28))],
+        [Spacer(1, 16*mm)],
+        # Hero number/text
+        [Paragraph(hero_text,
+                   ParagraphStyle('cvh', fontSize=88, fontName='Helvetica-Bold',
+                                  textColor=colors.HexColor(accent),
+                                  alignment=TA_CENTER, leading=92))],
+        [Paragraph(hero_sub,
+                   ParagraphStyle('cvhs', fontSize=16, fontName='Helvetica-Bold',
+                                  textColor=colors.HexColor(bg), alignment=TA_CENTER,
+                                  leading=22))],
+        [Spacer(1, 4*mm)],
+        [Paragraph(meta,
+                   ParagraphStyle('cvm', fontSize=10,
+                                  textColor=colors.HexColor(bg+'aa' if len(bg)==7 else bg),
+                                  alignment=TA_CENTER))],
+        [Spacer(1, 20*mm)],
+        # Bottom bar
+        [Table([['']], colWidths=[W], rowHeights=[3],
+               style=[('BACKGROUND',(0,0),(-1,-1),colors.HexColor(accent+'66')),
+                      ('TOPPADDING',(0,0),(-1,-1),0),('BOTTOMPADDING',(0,0),(-1,-1),0)])],
+        [Spacer(1, 4*mm)],
+        [Paragraph('Assessment IQ & Kepribadian v5.0',
+                   ParagraphStyle('cvf', fontSize=8, textColor=C_MUTED,
+                                  alignment=TA_CENTER))],
+        [Paragraph(datetime.now().strftime('%d %B %Y'),
+                   ParagraphStyle('cvd', fontSize=8, textColor=C_MUTED,
+                                  alignment=TA_CENTER))],
+        [Spacer(1, 6*mm)],
+    ]
+    tbl = Table(rows, colWidths=[W])
     tbl.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), C_DARK),
-        ('ALIGN',      (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN',     (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-        ('LEFTPADDING', (0,0), (-1,-1), 10*mm),
-        ('RIGHTPADDING', (0,0), (-1,-1), 10*mm),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor(bg)),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(tbl)
     story.append(PageBreak())
 
 
-# ══════════════════════════════════════════════════════════════
-# EXECUTIVE SUMMARY  (halaman 2)
-# ══════════════════════════════════════════════════════════════
-def _build_exec_summary(story, data, txt, styles):
-    s = styles
+# ══════════════════════════════════════════════════════════════════════════════
+# IQ PDF
+# ══════════════════════════════════════════════════════════════════════════════
+def generate_iq_pdf(path: str, data: dict, txt: dict):
+    s       = _styles()
+    lang    = data.get('lang', 'id')
+    user    = data.get('user') or {}
+    name    = user.get('name', 'Peserta')
+    iq      = data.get('iq', 0)
+    label   = data.get('label', 'Average')
+    pctile  = data.get('percentile', 0)
+    correct = data.get('correct', 0)
+    total   = data.get('total', 40)
+    accent, bg_hint = IQ_COLORS.get(label, ('#8b5cf6', '#ffffff'))
+    bg = '#1e2130'  # always dark cover
 
-    # Header badge
-    story.append(Paragraph(txt['pdf']['exec_summary'],
-                           ParagraphStyle('exh', fontSize=10, textColor=C_GOLD,
-                               fontName='Helvetica-Bold', letterSpacing=3,
-                               spaceAfter=6)))
-    _divider(story, color=C_GOLD)
+    doc = SimpleDocTemplate(path, pagesize=A4,
+        leftMargin=20*mm, rightMargin=20*mm,
+        topMargin=20*mm, bottomMargin=20*mm,
+        title=f'IQ Test Summary — {name}')
+    story = []
 
-    # ── IQ Block ──
-    iq     = data.get('iq', 0)
-    label  = data.get('label', '—')
-    pctile = data.get('percentile', 0)
-    correct= data.get('correct', 0)
-    total  = data.get('total', 0)
-    label_loc = txt['iq_categories'].get(label, label)
-    iq_col = IQ_CAT_COLORS.get(label, '#8b5cf6')
+    # ── Cover ──────────────────────────────────────────────────────────────
+    meta_str = (
+        f'Persentil ke-{pctile}  ·  {correct}/{total} soal benar' if lang=='id'
+        else f'Percentile {pctile}th  ·  {correct}/{total} correct'
+    )
+    _cover(story,
+        title='IQ Test Summary',
+        subtitle=name,
+        hero_text=str(iq),
+        hero_sub=label,
+        meta=meta_str,
+        accent=accent,
+        bg=bg,
+    )
 
-    iq_cells = [
-        [Paragraph(str(iq),      ParagraphStyle('eiqn', fontSize=40,
-            textColor=colors.HexColor(iq_col), fontName='Helvetica-Bold',
-            alignment=TA_CENTER)),
-         Paragraph(label_loc,    ParagraphStyle('eiql', fontSize=14,
-            textColor=colors.HexColor(iq_col), fontName='Helvetica-Bold',
-            alignment=TA_CENTER)),
-         Paragraph(f'{pctile}th', ParagraphStyle('eiqp', fontSize=22,
-            textColor=C_DARK, fontName='Helvetica-Bold', alignment=TA_CENTER)),
-         Paragraph(f'{correct}/{total}', ParagraphStyle('eiqc', fontSize=18,
-            textColor=C_BLUE, fontName='Helvetica-Bold', alignment=TA_CENTER)),
-        ],
-        [Paragraph('IQ', s['exec_label']),
-         Paragraph(txt['pdf']['section_cognitive'].split('.')[1].strip(), s['exec_label']),
-         Paragraph(txt['pdf']['percentile'], s['exec_label']),
-         Paragraph(txt['pdf']['your_score'], s['exec_label']),
-        ],
+    # ── Stats row ──────────────────────────────────────────────────────────
+    stats_label = ['IQ Score', 'Percentile', 'Correct', 'Total']
+    stats_val   = [str(iq), f'{pctile}th', str(correct), str(total)]
+    stats_col   = [accent, '#3b82f6', '#27ae60', '#8890aa']
+    stats_rows  = [
+        [Paragraph(v, ParagraphStyle('sv', fontSize=22, fontName='Helvetica-Bold',
+            textColor=colors.HexColor(c), alignment=TA_CENTER)) for v,c in zip(stats_val, stats_col)],
+        [Paragraph(l, ParagraphStyle('sl', fontSize=8, textColor=C_MUTED,
+            alignment=TA_CENTER)) for l in stats_label],
     ]
-    iq_tbl = Table(iq_cells, colWidths=[W_PAGE/4]*4)
-    iq_tbl.setStyle(TableStyle([
-        ('BACKGROUND',    (0,0), (-1,-1), C_LIGHT),
+    stats_tbl = Table(stats_rows, colWidths=[W/4]*4)
+    stats_tbl.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0), (-1,-1), C_BG),
+        ('BOX',           (0,0), (-1,-1), 1, C_BORDER),
+        ('INNERGRID',     (0,0), (-1,-1), 0.5, C_BORDER),
+        ('TOPPADDING',    (0,0), (-1,-1), 10),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+    ]))
+    story.append(stats_tbl)
+    story.append(Spacer(1, 6*mm))
+
+    # ── Cognitive Profile ──────────────────────────────────────────────────
+    cog_title = 'Profil Kognitif' if lang=='id' else 'Cognitive Profile'
+    cog_sub   = 'Skor per domain berdasarkan soal yang dijawab (berbobot difficulty)' if lang=='id' else 'Score per domain based on answered questions (difficulty weighted)'
+    _section_bar(story, cog_title, accent)
+    story.append(Paragraph(cog_sub, s['muted']))
+    story.append(Spacer(1, 3*mm))
+
+    cog   = data.get('cognitive', {})
+    names = COG_ID if lang=='id' else COG_EN
+    lvls  = LVL_ID if lang=='id' else LVL_EN
+
+    cog_rows = []
+    for dom, d in sorted(cog.items(), key=lambda x: x[1].get('rank', 99)):
+        col  = COG_HEX.get(dom, '#3b82f6')
+        name_d = names.get(dom, dom)
+        pct  = d.get('score_pct', 0)
+        lvl  = lvls.get(d.get('level','average'), d.get('level_id',''))
+        cog_rows.append([
+            Paragraph(f'<b>{name_d}</b>', ParagraphStyle('cn', fontSize=10,
+                textColor=colors.HexColor(col), fontName='Helvetica-Bold')),
+            _bar(pct, col, w=W*0.45, h=8),
+            Paragraph(f'<b>{pct:.0f}%</b>', ParagraphStyle('cp', fontSize=10,
+                textColor=colors.HexColor(col), fontName='Helvetica-Bold',
+                alignment=TA_CENTER)),
+            Paragraph(lvl, ParagraphStyle('cl', fontSize=9,
+                textColor=colors.HexColor(col), alignment=TA_RIGHT)),
+        ])
+
+    if cog_rows:
+        ct = Table(cog_rows, colWidths=[W*0.28, W*0.45, W*0.1, W*0.17])
+        ct.setStyle(TableStyle([
+            ('TOPPADDING',    (0,0), (-1,-1), 7),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 7),
+            ('LEFTPADDING',   (0,0), (0,-1), 6),
+            ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+            ('ROWBACKGROUNDS',(0,0), (-1,-1), [C_WHITE, C_BG]),
+            ('BOX',           (0,0), (-1,-1), 0.5, C_BORDER),
+            ('LINEBELOW',     (0,0), (-1,-2), 0.3, C_BORDER),
+        ]))
+        story.append(ct)
+
+    # ── AI Interpretation ──────────────────────────────────────────────────
+    ai_text = data.get('ai_text', '')
+    if ai_text:
+        story.append(Spacer(1, 6*mm))
+        ai_title = '✨  Interpretasi AI' if lang=='id' else '✨  AI Interpretation'
+        _section_bar(story, ai_title, '#6366f1')
+        # AI text dalam box dengan background subtle
+        ai_tbl = Table([[Paragraph(ai_text, s['body'])]],
+                       colWidths=[W])
+        ai_tbl.setStyle(TableStyle([
+            ('BACKGROUND',    (0,0), (-1,-1), colors.HexColor('#f0f0ff')),
+            ('BOX',           (0,0), (-1,-1), 0.5, colors.HexColor('#c7d2fe')),
+            ('TOPPADDING',    (0,0), (-1,-1), 12),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 12),
+            ('LEFTPADDING',   (0,0), (-1,-1), 14),
+            ('RIGHTPADDING',  (0,0), (-1,-1), 14),
+        ]))
+        story.append(ai_tbl)
+
+    # ── Answer Review ──────────────────────────────────────────────────────
+    iq_session = data.get('iq_session', [])
+    iq_answers = data.get('iq_answers', [])
+    if iq_session and iq_answers:
+        story.append(PageBreak())
+        rev_title = 'Review Jawaban' if lang=='id' else 'Answer Review'
+        _section_bar(story, rev_title, accent)
+
+        correct_count = sum(1 for i,q in enumerate(iq_session)
+                           if i < len(iq_answers) and iq_answers[i] == q.get('ans'))
+        summary = (f'{correct_count} dari {len(iq_session)} soal dijawab benar' if lang=='id'
+                   else f'{correct_count} of {len(iq_session)} questions answered correctly')
+        story.append(Paragraph(summary, s['muted']))
+        story.append(Spacer(1, 3*mm))
+
+        for i, q in enumerate(iq_session):
+            if i >= len(iq_answers): break
+            ua = iq_answers[i]
+            ca = q.get('ans', 0)
+            ok = (ua == ca)
+
+            hdr = Table([[
+                Paragraph(f'<b>{"✓" if ok else "✗"}  Q{i+1}</b>  {q.get("category","")}',
+                    ParagraphStyle('qh', fontSize=9, fontName='Helvetica-Bold',
+                        textColor=C_GREEN if ok else C_RED)),
+            ]], colWidths=[W])
+            hdr.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,-1),
+                 colors.HexColor('#f0fff4' if ok else '#fff4f4')),
+                ('TOPPADDING', (0,0), (-1,-1), 5),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+                ('LEFTPADDING', (0,0), (-1,-1), 8),
+                ('BOX', (0,0), (-1,-1), 0.3,
+                 colors.HexColor('#27ae6044' if ok else '#e74c3c44')),
+            ]))
+            story.append(hdr)
+
+            q_tbl = Table([[Paragraph(q.get('q',''), s['body'])]],
+                          colWidths=[W])
+            q_tbl.setStyle(TableStyle([
+                ('TOPPADDING',   (0,0),(-1,-1),6),
+                ('BOTTOMPADDING',(0,0),(-1,-1),4),
+                ('LEFTPADDING',  (0,0),(-1,-1),8),
+            ]))
+            story.append(q_tbl)
+
+            opts = q.get('opts', [])
+            for j, opt in enumerate(opts):
+                letter = chr(65+j)
+                if j == ca and j == ua:
+                    story.append(Paragraph(f'  {letter}.  {opt}  ✓  (Jawaban kamu & benar)', s['correct']))
+                elif j == ca:
+                    story.append(Paragraph(f'  {letter}.  {opt}  ← Jawaban benar', s['correct']))
+                elif j == ua:
+                    story.append(Paragraph(f'  {letter}.  {opt}  ← Jawaban kamu', s['wrong']))
+                else:
+                    story.append(Paragraph(f'  {letter}.  {opt}', s['muted']))
+
+            exp = q.get('explanation','')
+            if exp:
+                story.append(Paragraph(f'💡  {exp}', s['tip']))
+            story.append(Spacer(1, 3*mm))
+
+    # ── Footer ─────────────────────────────────────────────────────────────
+    _divider(story)
+    story.append(Paragraph(
+        'Dokumen ini dibuat otomatis. Hasil bersifat indikatif dan tidak menggantikan asesmen profesional.' if lang=='id'
+        else 'Auto-generated document. Results are indicative and do not replace professional assessment.',
+        s['disc']))
+
+    doc.build(story)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BIG FIVE PDF
+# ══════════════════════════════════════════════════════════════════════════════
+def generate_bf_pdf(path: str, data: dict, txt: dict):
+    s      = _styles()
+    lang   = data.get('lang', 'id')
+    user   = data.get('user') or {}
+    name   = user.get('name', 'Peserta')
+    bf     = data.get('bf_scores', {})
+    bf_pct = data.get('bf_pcts', {})
+    arch   = data.get('archetype') or {}
+    dominant = max(bf, key=lambda t: bf.get(t,0)) if bf else 'O'
+    accent   = TRAIT_HEX.get(dominant, '#8b5cf6')
+
+    doc = SimpleDocTemplate(path, pagesize=A4,
+        leftMargin=20*mm, rightMargin=20*mm,
+        topMargin=20*mm, bottomMargin=20*mm,
+        title=f'Big Five Test Summary — {name}')
+    story = []
+
+    # ── Cover ──────────────────────────────────────────────────────────────
+    arch_name = arch.get('name', 'Personality Profile')
+    arch_tag  = arch.get('tag', 'BIG FIVE')
+    _cover(story,
+        title='Big Five Personality Summary',
+        subtitle=name,
+        hero_text=arch_tag,
+        hero_sub=arch_name,
+        meta='OCEAN · Big Five Personality Assessment',
+        accent=accent,
+        bg='#1e2130',
+    )
+
+    # ── OCEAN donut row ────────────────────────────────────────────────────
+    tnames = TRAIT_ID if lang=='id' else TRAIT_EN
+    donut_cells = []
+    label_cells = []
+    for t in 'OCEAN':
+        col = TRAIT_HEX[t]
+        sc  = bf.get(t, 50)
+        donut_cells.append(_donut(sc, col, size=65))
+        label_cells.append(Paragraph(f'<b>{tnames[t]}</b>',
+            ParagraphStyle('dl', fontSize=8, fontName='Helvetica-Bold',
+                textColor=colors.HexColor(col), alignment=TA_CENTER)))
+
+    donut_tbl = Table([donut_cells, label_cells], colWidths=[W/5]*5)
+    donut_tbl.setStyle(TableStyle([
         ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
         ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
         ('TOPPADDING',    (0,0), (-1,-1), 10),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ('GRID',          (0,0), (-1,-1), 0.5, C_BORDER),
-        ('ROUNDEDCORNERS', [6]),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('BACKGROUND',    (0,0), (-1,-1), C_BG),
+        ('BOX',           (0,0), (-1,-1), 0.5, C_BORDER),
     ]))
-    story.append(iq_tbl)
-    story.append(Spacer(1, 4*mm))
+    story.append(donut_tbl)
+    story.append(Spacer(1, 6*mm))
 
-    # ── Cognitive top 2 ──
-    cog = data.get('cognitive', {})
-    if cog:
-        cog_sorted = sorted(cog.items(), key=lambda x: x[1]['score_pct'], reverse=True)
-        cog_names_id = {
-            'fluid':'Penalaran Cair','crystallized':'Kecerdasan Verbal',
-            'abstract':'Penalaran Abstrak','quantitative':'Penalaran Kuantitatif',
-            'spatial':'Kecerdasan Spasial',
-        }
-        cog_names_en = {
-            'fluid':'Fluid Reasoning','crystallized':'Verbal Intelligence',
-            'abstract':'Abstract Reasoning','quantitative':'Quantitative Reasoning',
-            'spatial':'Spatial Intelligence',
-        }
-        cog_names = cog_names_id if data.get('lang','id')=='id' else cog_names_en
+    # ── OCEAN Detail bars ──────────────────────────────────────────────────
+    ocean_title = 'Profil Kepribadian OCEAN' if lang=='id' else 'OCEAN Personality Profile'
+    _section_bar(story, ocean_title, accent)
 
-        story.append(Paragraph(txt['expert']['cognitive_title'], s['h3']))
-        cog_rows = [['Domain', txt['pdf']['your_score'], '%']]
-        for dom, d in cog_sorted[:5]:
-            col = CAT_COLORS_HEX.get(dom, '#3b82f6')
-            cog_rows.append([
-                cog_names.get(dom, dom),
-                d['level'],
-                f"{d['score_pct']:.0f}%",
-            ])
-        cog_tbl = Table(cog_rows, colWidths=[W_PAGE*0.5, W_PAGE*0.3, W_PAGE*0.2])
-        cog_tbl.setStyle(TableStyle([
-            ('BACKGROUND',    (0,0), (-1,0), C_DARK2),
-            ('TEXTCOLOR',     (0,0), (-1,0), C_WHITE),
-            ('FONTNAME',      (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE',      (0,0), (-1,-1), 9),
-            ('ALIGN',         (1,0), (-1,-1), 'CENTER'),
-            ('ROWBACKGROUNDS',(0,1), (-1,-1), [C_LIGHT, C_WHITE]),
-            ('GRID',          (0,0), (-1,-1), 0.3, C_BORDER),
-            ('TOPPADDING',    (0,0), (-1,-1), 5),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-        ]))
-        story.append(cog_tbl)
-        story.append(Spacer(1, 4*mm))
+    tdesc = TRAIT_DESC_ID if lang=='id' else TRAIT_DESC_EN
+    for t in 'OCEAN':
+        col  = TRAIT_HEX[t]
+        sc   = bf.get(t, 50)
+        pct  = round(bf_pct.get(t, 50))
+        name_t = tnames[t]
+        desc   = tdesc.get(t, '')
 
-    # ── Personality block ──
-    arch = data.get('archetype')
-    bf_scores = data.get('bf_scores', {})
-    bf_pcts   = data.get('bf_pcts', {})
-    if arch and bf_scores:
-        story.append(Paragraph(txt['expert']['combined_title'], s['h3']))
-
-        trait_names = txt['trait_names']
-        trait_rows  = [['Trait', txt['pdf']['your_score'], txt['pdf']['percentile']]]
-        for t in ['O','C','E','A','N']:
-            trait_rows.append([
-                trait_names.get(t, t),
-                f"{bf_scores.get(t,50)}/100",
-                f"{round(bf_pcts.get(t,50))}th",
-            ])
-        t_tbl = Table(trait_rows, colWidths=[W_PAGE*0.4, W_PAGE*0.3, W_PAGE*0.3])
-        t_tbl.setStyle(TableStyle([
-            ('BACKGROUND',    (0,0), (-1,0), C_DARK2),
-            ('TEXTCOLOR',     (0,0), (-1,0), C_WHITE),
-            ('FONTNAME',      (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE',      (0,0), (-1,-1), 9),
-            ('ALIGN',         (1,0), (-1,-1), 'CENTER'),
-            ('ROWBACKGROUNDS',(0,1), (-1,-1), [C_LIGHT, C_WHITE]),
-            ('GRID',          (0,0), (-1,-1), 0.3, C_BORDER),
-            ('TOPPADDING',    (0,0), (-1,-1), 5),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-        ]))
-        story.append(t_tbl)
-        story.append(Spacer(1, 3*mm))
-
-        story.append(Paragraph(f'<b>{arch.get("tag","")}</b>  —  {arch.get("name","")}',
-                               s['tag']))
-        story.append(Paragraph(arch.get('desc',''), s['body_muted']))
-
-    # ── Top careers ──
-    careers = data.get('careers', [])
-    if careers:
-        story.append(Spacer(1, 2*mm))
-        story.append(Paragraph(txt['expert']['career_title'], s['h3']))
-        car_rows = [[txt['expert']['career_title'].split()[0],
-                     txt['expert']['career_confidence']]]
-        for c in careers[:5]:
-            car_rows.append([c['name'], f"{c['confidence']}%"])
-        c_tbl = Table(car_rows, colWidths=[W_PAGE*0.75, W_PAGE*0.25])
-        c_tbl.setStyle(TableStyle([
-            ('BACKGROUND',    (0,0), (-1,0), C_DARK2),
-            ('TEXTCOLOR',     (0,0), (-1,0), C_WHITE),
-            ('FONTNAME',      (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE',      (0,0), (-1,-1), 9),
-            ('ALIGN',         (1,0), (-1,-1), 'CENTER'),
-            ('ROWBACKGROUNDS',(0,1), (-1,-1), [C_LIGHT, C_WHITE]),
-            ('GRID',          (0,0), (-1,-1), 0.3, C_BORDER),
-            ('TOPPADDING',    (0,0), (-1,-1), 5),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-        ]))
-        story.append(c_tbl)
-
-    story.append(PageBreak())
-
-
-# ══════════════════════════════════════════════════════════════
-# FULL REPORT — Section 1: Cognitive
-# ══════════════════════════════════════════════════════════════
-def _build_section_cognitive(story, data, txt, styles):
-    s = styles
-    _section_header(story, '1', txt['pdf']['section_cognitive'], s)
-
-    cog = data.get('cognitive', {})
-    if not cog:
-        story.append(Paragraph('—', s['body_muted'])); return
-
-    cog_names_id = {
-        'fluid':'Penalaran Cair (Fluid Reasoning)',
-        'crystallized':'Kecerdasan Terkristalisasi (Crystallized Intelligence)',
-        'abstract':'Penalaran Abstrak (Abstract Reasoning)',
-        'quantitative':'Penalaran Kuantitatif (Quantitative Reasoning)',
-        'spatial':'Kecerdasan Spasial (Spatial Intelligence)',
-    }
-    cog_names_en = {
-        'fluid':'Fluid Reasoning',
-        'crystallized':'Crystallized Intelligence',
-        'abstract':'Abstract Reasoning',
-        'quantitative':'Quantitative Reasoning',
-        'spatial':'Spatial Intelligence',
-    }
-    lang = data.get('lang', 'id')
-    cog_names = cog_names_id if lang == 'id' else cog_names_en
-
-    from engine.scoring import (COGNITIVE_DESC_ID, COGNITIVE_DESC_EN,
-                                COGNITIVE_LEVEL_COLORS, COGNITIVE_LEVEL_ID)
-    cog_desc  = COGNITIVE_DESC_ID if lang == 'id' else COGNITIVE_DESC_EN
-    level_lbl = COGNITIVE_LEVEL_ID if lang == 'id' else {k:k for k in COGNITIVE_LEVEL_ID}
-
-    cog_sorted = sorted(cog.items(), key=lambda x: x[1]['rank'])
-
-    for dom, d in cog_sorted:
-        col  = CAT_COLORS_HEX.get(dom, '#3b82f6')
-        lvl  = d['level']
-        pct  = d['score_pct']
-        name = cog_names.get(dom, dom)
-        lbl  = level_lbl.get(lvl, lvl)
-
-        hdr_row = [[
-            Paragraph(f'<b>{name}</b>', ParagraphStyle('ch', fontSize=10,
-                textColor=colors.HexColor(col), fontName='Helvetica-Bold')),
-            Paragraph(f'<b>{lbl}</b>  ·  {pct:.0f}%',
-                ParagraphStyle('cv', fontSize=10, textColor=colors.HexColor(col),
-                    fontName='Helvetica-Bold', alignment=TA_RIGHT)),
-        ]]
-        hdr = Table(hdr_row, colWidths=[W_PAGE*0.6, W_PAGE*0.4])
-        hdr.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor(col+'15')),
-            ('TOPPADDING', (0,0), (-1,-1), 5),
+        row = Table([[
+            Paragraph(f'<b>{name_t}  ({t})</b>', ParagraphStyle('tn', fontSize=10,
+                fontName='Helvetica-Bold', textColor=colors.HexColor(col))),
+            Paragraph(f'<b>{sc:.0f}</b>/100  ·  {pct}th %ile',
+                ParagraphStyle('tv', fontSize=9, textColor=colors.HexColor(col),
+                    alignment=TA_RIGHT)),
+        ]], colWidths=[W*0.55, W*0.45])
+        row.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor(col+'12')),
+            ('TOPPADDING', (0,0), (-1,-1), 6),
             ('BOTTOMPADDING', (0,0), (-1,-1), 5),
             ('LEFTPADDING', (0,0), (0,-1), 8),
             ('RIGHTPADDING', (-1,0), (-1,-1), 8),
         ]))
-        story.append(hdr)
-        story.append(_bar_drawing(pct, col, width=W_PAGE))
-        desc = cog_desc.get(dom, {}).get(lvl, '')
+        story.append(row)
+        story.append(_bar(sc, col))
         if desc:
-            story.append(Paragraph(desc, s['body_muted']))
-        story.append(Spacer(1, 3*mm))
-
-
-# ══════════════════════════════════════════════════════════════
-# FULL REPORT — Section 2: Personality
-# ══════════════════════════════════════════════════════════════
-def _build_section_personality(story, data, txt, styles):
-    s = styles
-    _section_header(story, '2', txt['pdf']['section_personality'], s)
-
-    bf_scores = data.get('bf_scores', {})
-    bf_pcts   = data.get('bf_pcts', {})
-    arch      = data.get('archetype', {})
-    lang      = data.get('lang', 'id')
-
-    if not bf_scores:
-        story.append(Paragraph('—', s['body_muted'])); return
-
-    if arch:
-        story.append(Paragraph(f'<b>{arch.get("tag","")}</b>', s['tag']))
-        story.append(Paragraph(arch.get('name',''),
-                               ParagraphStyle('an', fontSize=14, textColor=C_DARK,
-                                   fontName='Helvetica-Bold', spaceAfter=4)))
-        story.append(Paragraph(arch.get('desc',''), s['body']))
-        _divider(story)
-
-    trait_names = txt['trait_names']
-    trait_low   = txt['trait_low']
-    trait_high  = txt['trait_high']
-    # pop_stat loaded from norms.json
-    import json
-    with open('processed/norms.json', encoding='utf-8') as _f:
-        _pop = json.load(_f)['stats']
-
-    for t in ['O','C','E','A','N']:
-        col  = TRAIT_COLORS_HEX.get(t, '#3b82f6')
-        sc   = bf_scores.get(t, 50)
-        pct  = round(bf_pcts.get(t, 50))
-        name = trait_names.get(t, t)
-
-        row = [[
-            Paragraph(f'<b>{name}</b>', ParagraphStyle('tn', fontSize=10,
-                textColor=colors.HexColor(col), fontName='Helvetica-Bold')),
-            Paragraph(f'<b>{sc}/100</b>  ·  {pct}th percentile',
-                ParagraphStyle('tv', fontSize=10, textColor=colors.HexColor(col),
-                    fontName='Helvetica-Bold', alignment=TA_RIGHT)),
-        ]]
-        hdr = Table(row, colWidths=[W_PAGE*0.55, W_PAGE*0.45])
-        hdr.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor(col+'15')),
-            ('TOPPADDING', (0,0), (-1,-1), 5),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-            ('LEFTPADDING',  (0,0), (0,-1), 8),
-            ('RIGHTPADDING', (-1,0), (-1,-1), 8),
-        ]))
-        story.append(hdr)
-        story.append(_bar_drawing(sc, col, width=W_PAGE))
-        story.append(Paragraph(
-            f'{trait_low.get(t,"")} ↔ {trait_high.get(t,"")}',
-            s['body_muted']))
-        story.append(Spacer(1, 3*mm))
-
-
-# ══════════════════════════════════════════════════════════════
-# FULL REPORT — Section 3: Combined Profile
-# ══════════════════════════════════════════════════════════════
-def _build_section_combined(story, data, txt, styles):
-    s = styles
-    _section_header(story, '3', txt['pdf']['section_combined'], s)
-    combined = data.get('combined', {})
-    if not combined:
-        story.append(Paragraph('—', s['body_muted'])); return
-
-    story.append(Paragraph(f'<b>{combined.get("name","")}</b>',
-                           ParagraphStyle('cpn', fontSize=13, textColor=C_DARK,
-                               fontName='Helvetica-Bold', spaceAfter=4)))
-    story.append(Paragraph(combined.get('desc', ''), s['body']))
-    story.append(Spacer(1, 3*mm))
-    story.append(Paragraph(
-        '→ ' + combined.get('action', ''),
-        ParagraphStyle('cpa', fontSize=10, textColor=C_BLUE,
-            fontName='Helvetica-Bold', leading=14, leftIndent=8)
-    ))
-
-
-# ══════════════════════════════════════════════════════════════
-# FULL REPORT — Section 4: Career
-# ══════════════════════════════════════════════════════════════
-def _build_section_career(story, data, txt, styles):
-    s = styles
-    _section_header(story, '4', txt['pdf']['section_career'], s)
-    careers = data.get('careers', [])
-    if not careers:
-        story.append(Paragraph('—', s['body_muted'])); return
-
-    story.append(Paragraph(txt['expert']['career_subtitle'], s['body_muted']))
-    story.append(Spacer(1, 3*mm))
-
-    for i, c in enumerate(careers, 1):
-        conf  = c['confidence']
-        col   = C_GREEN if conf >= 75 else (C_BLUE if conf >= 60 else C_MUTED)
-        rank_label = ['🥇','🥈','🥉','4.','5.'][i-1]
-        story.append(Paragraph(
-            f'<b>{rank_label}  {c["name"]}</b>',
-            ParagraphStyle('crn', fontSize=11, textColor=C_DARK,
-                fontName='Helvetica-Bold', spaceAfter=2)
-        ))
-        story.append(_confidence_bar(conf, TRAIT_COLORS_HEX.get('O','#f97316'),
-                                     txt['pdf']['confidence']))
-        story.append(Spacer(1, 3*mm))
-
-
-# ══════════════════════════════════════════════════════════════
-# FULL REPORT — Section 5: Learning Style
-# ══════════════════════════════════════════════════════════════
-def _build_section_learning(story, data, txt, styles):
-    s = styles
-    _section_header(story, '5', txt['pdf']['section_learning'], s)
-    style_name   = data.get('learning_style_name', '')
-    style_detail = data.get('learning_style_detail', {})
-    if not style_name:
-        story.append(Paragraph('—', s['body_muted'])); return
-
-    story.append(Paragraph(f'<b>{style_name}</b>',
-                           ParagraphStyle('lsn', fontSize=14, textColor=C_BLUE,
-                               fontName='Helvetica-Bold', spaceAfter=4)))
-    story.append(Paragraph(style_detail.get('desc', ''), s['body']))
-    _divider(story)
-
-    tips = style_detail.get('tips', [])
-    if tips:
-        lang = data.get('lang', 'id')
-        story.append(Paragraph('<b>Tips:</b>' if lang == 'id' else '<b>Tips:</b>', s['h3']))
-        for tip in tips:
-            story.append(Paragraph(f'• {tip}', s['action']))
-
-    env = style_detail.get('environment', '')
-    if env:
+            story.append(Paragraph(desc, s['muted']))
         story.append(Spacer(1, 2*mm))
-        lang = data.get('lang', 'id')
-        lbl = 'Lingkungan ideal:' if lang == 'id' else 'Ideal environment:'
-        story.append(Paragraph(f'<b>{lbl}</b> {env}', s['body_muted']))
 
+    # ── Archetype ──────────────────────────────────────────────────────────
+    if arch:
+        story.append(Spacer(1, 4*mm))
+        arch_title = 'Arketipe Kepribadian' if lang=='id' else 'Personality Archetype'
+        _section_bar(story, arch_title, accent)
 
-# ══════════════════════════════════════════════════════════════
-# FULL REPORT — Section 6: Blind Spots
-# ══════════════════════════════════════════════════════════════
-def _build_section_blindspots(story, data, txt, styles):
-    s = styles
-    _section_header(story, '6', txt['pdf']['section_blindspot'], s)
-    blind_spots = data.get('blind_spots', [])
-    if not blind_spots:
-        story.append(Paragraph('—', s['body_muted'])); return
-
-    lang = data.get('lang', 'id')
-    mit_lbl = 'Mitigasi:' if lang == 'id' else 'Mitigation:'
-
-    for bs in blind_spots:
-        story.append(KeepTogether([
-            Paragraph(f'⚠  <b>{bs["title"]}</b>',
-                      ParagraphStyle('bst', fontSize=10, textColor=C_RED,
-                          fontName='Helvetica-Bold', spaceAfter=3)),
-            Paragraph(bs['desc'], s['body']),
-            Paragraph(f'<b>{mit_lbl}</b> {bs["mitigation"]}', s['mitigation']),
-            Spacer(1, 3*mm),
+        arch_inner = [
+            Paragraph(arch.get('tag',''),
+                ParagraphStyle('at', fontSize=8, fontName='Helvetica-Bold',
+                    textColor=C_GOLD, letterSpacing=2, spaceAfter=3)),
+            Paragraph(f'<b>{arch.get("name","")}</b>',
+                ParagraphStyle('an', fontSize=15, fontName='Helvetica-Bold',
+                    textColor=C_DARK, spaceAfter=6)),
+            Paragraph(arch.get('desc',''), s['body']),
+        ]
+        arch_box = Table(
+            [[item] for item in arch_inner],
+            colWidths=[W]
+        )
+        arch_box.setStyle(TableStyle([
+            ('BACKGROUND',    (0,0), (-1,-1), colors.HexColor(accent+'10')),
+            ('BOX',           (0,0), (-1,-1), 1.5, colors.HexColor(accent+'44')),
+            ('TOPPADDING',    (0,0), (0,0), 14),
+            ('TOPPADDING',    (0,1), (-1,-1), 4),
+            ('BOTTOMPADDING', (0,0), (-1,-2), 4),
+            ('BOTTOMPADDING', (0,-1), (-1,-1), 14),
+            ('LEFTPADDING',   (0,0), (-1,-1), 16),
+            ('RIGHTPADDING',  (0,0), (-1,-1), 16),
         ]))
+        story.append(arch_box)
 
+    # ── Careers ────────────────────────────────────────────────────────────
+    careers = data.get('careers', [])
+    if careers:
+        story.append(Spacer(1, 6*mm))
+        car_title = 'Rekomendasi Karir' if lang=='id' else 'Career Recommendations'
+        _section_bar(story, car_title, accent)
 
-# ══════════════════════════════════════════════════════════════
-# FULL REPORT — Section 7: Roadmap
-# ══════════════════════════════════════════════════════════════
-def _build_section_roadmap(story, data, txt, styles):
-    s = styles
-    _section_header(story, '7', txt['pdf']['section_roadmap'], s)
-    roadmap = data.get('roadmap', [])
-    if not roadmap:
-        story.append(Paragraph('—', s['body_muted'])); return
-
-    month_colors = [C_BLUE, C_GREEN, C_GOLD]
-    lang = data.get('lang', 'id')
-    month_lbl   = txt['pdf']['month']
-    focus_lbl   = txt['pdf']['section_roadmap'].split('—')[0].strip()
-    actions_lbl = 'Aksi' if lang == 'id' else 'Actions'
-
-    for i, month in enumerate(roadmap):
-        col = month_colors[i % len(month_colors)]
-        header_row = [[
-            Paragraph(f'<b>{month_lbl} {month["month"]}  —  {month["focus"]}</b>',
-                      ParagraphStyle('rmh', fontSize=11, textColor=C_WHITE,
-                          fontName='Helvetica-Bold'))
+        medals = ['🥇','🥈','🥉','4','5','6','7','8']
+        car_data = [[
+            Paragraph('<b>Karir</b>' if lang=='id' else '<b>Career</b>',
+                ParagraphStyle('ch', fontSize=9, fontName='Helvetica-Bold', textColor=C_MUTED)),
+            Paragraph('<b>Kesesuaian</b>' if lang=='id' else '<b>Match</b>',
+                ParagraphStyle('ch2', fontSize=9, fontName='Helvetica-Bold',
+                    textColor=C_MUTED, alignment=TA_CENTER)),
+            Paragraph('<b>Bar</b>',
+                ParagraphStyle('ch3', fontSize=9, fontName='Helvetica-Bold',
+                    textColor=C_WHITE, alignment=TA_CENTER)),
         ]]
-        hdr = Table(header_row, colWidths=[W_PAGE])
-        hdr.setStyle(TableStyle([
-            ('BACKGROUND',    (0,0), (-1,-1), col),
+        for i, c in enumerate(careers[:8]):
+            conf = c.get('confidence', 0)
+            col  = '#27ae60' if conf>=75 else ('#3b82f6' if conf>=60 else '#8890aa')
+            car_data.append([
+                Paragraph(f'{medals[i]}  <b>{c["name"]}</b>',
+                    ParagraphStyle('cn', fontSize=10, textColor=C_DARK)),
+                Paragraph(f'<b>{conf}%</b>',
+                    ParagraphStyle('cc', fontSize=10, fontName='Helvetica-Bold',
+                        textColor=colors.HexColor(col), alignment=TA_CENTER)),
+                _bar(conf, col, w=W*0.38, h=8),
+            ])
+
+        car_tbl = Table(car_data, colWidths=[W*0.4, W*0.12, W*0.38+W*0.1])
+        car_tbl.setStyle(TableStyle([
+            ('BACKGROUND',    (0,0), (-1,0),  C_DARK2),
+            ('TEXTCOLOR',     (0,0), (-1,0),  C_WHITE),
+            ('ROWBACKGROUNDS',(0,1), (-1,-1), [C_WHITE, C_BG]),
             ('TOPPADDING',    (0,0), (-1,-1), 8),
             ('BOTTOMPADDING', (0,0), (-1,-1), 8),
-            ('LEFTPADDING',   (0,0), (-1,-1), 10),
+            ('LEFTPADDING',   (0,0), (-1,-1), 8),
+            ('BOX',           (0,0), (-1,-1), 0.5, C_BORDER),
+            ('LINEBELOW',     (0,0), (-1,-2), 0.3, C_BORDER),
+            ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
         ]))
-        story.append(hdr)
+        story.append(car_tbl)
 
-        actions = month.get('actions', [])
-        act_items = [[
-            Paragraph(f'☐  {act}',
-                      ParagraphStyle('rma', fontSize=9, textColor=C_DARK,
-                          leading=14, leftIndent=4))
-        ] for act in actions]
+    # ── Roadmap ────────────────────────────────────────────────────────────
+    roadmap = data.get('roadmap', [])
+    if roadmap:
+        story.append(PageBreak())
+        road_title = 'Roadmap Pengembangan 3 Bulan' if lang=='id' else '3-Month Development Roadmap'
+        _section_bar(story, road_title, accent)
 
-        if act_items:
-            act_tbl = Table(act_items, colWidths=[W_PAGE])
-            act_tbl.setStyle(TableStyle([
-                ('BACKGROUND',    (0,0), (-1,-1), C_LIGHT),
-                ('TOPPADDING',    (0,0), (-1,-1), 5),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-                ('LEFTPADDING',   (0,0), (-1,-1), 12),
-                ('LINEBELOW',     (0,0), (-1,-2), 0.3, C_BORDER),
+        road_sub = 'Rencana aksi konkret berdasarkan profil kepribadian kamu.' if lang=='id' else 'Concrete action plan based on your personality profile.'
+        story.append(Paragraph(road_sub, s['muted']))
+        story.append(Spacer(1, 3*mm))
+
+        month_accents = [accent, '#3b82f6', '#27ae60']
+        month_lbl = 'Bulan' if lang=='id' else 'Month'
+        for i, month in enumerate(roadmap):
+            mc = month_accents[i % 3]
+            # Month header
+            mhdr = Table([[
+                Paragraph(f'<b>{month_lbl} {month["month"]}</b>',
+                    ParagraphStyle('mh', fontSize=10, fontName='Helvetica-Bold',
+                        textColor=C_WHITE)),
+                Paragraph(f'<b>{month.get("focus","")}</b>',
+                    ParagraphStyle('mf', fontSize=10, fontName='Helvetica-Bold',
+                        textColor=colors.HexColor(mc+'dd' if len(mc)==7 else mc))),
+            ]], colWidths=[W*0.2, W*0.8])
+            mhdr.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,-1), C_DARK),
+                ('TOPPADDING', (0,0), (-1,-1), 8),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+                ('LEFTPADDING', (0,0), (-1,-1), 10),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('LINEBELOW', (0,0), (0,-1), 3, colors.HexColor(mc)),
             ]))
-            story.append(act_tbl)
-        story.append(Spacer(1, 4*mm))
+            story.append(mhdr)
 
+            for act in month.get('actions', []):
+                act_row = Table([[
+                    Paragraph(f'☐  {act}', ParagraphStyle('ar', fontSize=9, textColor=C_DARK,
+                        leading=14, leftIndent=4))
+                ]], colWidths=[W])
+                act_row.setStyle(TableStyle([
+                    ('BACKGROUND',    (0,0), (-1,-1), C_WHITE),
+                    ('TOPPADDING',    (0,0), (-1,-1), 6),
+                    ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+                    ('LEFTPADDING',   (0,0), (-1,-1), 14),
+                    ('LINEBELOW',     (0,0), (-1,-1), 0.3, C_BORDER),
+                    ('LINEBEFORE',    (0,0), (0,-1), 3, colors.HexColor(mc)),
+                ]))
+                story.append(act_row)
+            story.append(Spacer(1, 5*mm))
 
-# ══════════════════════════════════════════════════════════════
-# FULL REPORT — IQ Answer Review
-# ══════════════════════════════════════════════════════════════
-def _build_iq_review(story, data, txt, styles):
-    s = styles
-    lang = data.get('lang', 'id')
-    lbl  = 'Review Jawaban IQ' if lang == 'id' else 'IQ Answer Review'
-    _section_header(story, '★', lbl, s)
-
-    iq_answers = data.get('iq_answers', [])
-    iq_session = data.get('iq_session', [])
-    if not iq_answers or not iq_session:
-        story.append(Paragraph('—', s['body_muted'])); return
-
-    for i, q in enumerate(iq_session):
-        ua = iq_answers[i]
-        ca = q['ans']
-        ok = (ua == ca)
-        icon  = '✓' if ok else '✗'
-        i_col = C_GREEN if ok else C_RED
-
-        q_row = [[
-            Paragraph(f'<b>{i+1}. {q["category"]}</b>',
-                      ParagraphStyle('qcat', fontSize=8, textColor=C_MUTED)),
-            Paragraph(f'<b>{icon}</b>',
-                      ParagraphStyle('qic', fontSize=10, textColor=i_col,
-                          fontName='Helvetica-Bold', alignment=TA_RIGHT)),
-        ]]
-        q_hdr = Table(q_row, colWidths=[W_PAGE*0.85, W_PAGE*0.15])
-        q_hdr.setStyle(TableStyle([
-            ('BACKGROUND',    (0,0), (-1,-1), C_LIGHT),
-            ('TOPPADDING',    (0,0), (-1,-1), 4),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-            ('LEFTPADDING',   (0,0), (0,-1), 8),
+    # ── AI Interpretation ──────────────────────────────────────────────────
+    ai_text = data.get('ai_text', '')
+    if ai_text:
+        if roadmap:
+            pass  # sudah di page baru
+        else:
+            story.append(Spacer(1, 6*mm))
+        ai_title = '✨  Interpretasi AI — Analisis Personal' if lang=='id' else '✨  AI Interpretation — Personal Analysis'
+        _section_bar(story, ai_title, '#6366f1')
+        ai_tbl = Table([[Paragraph(ai_text, s['body'])]], colWidths=[W])
+        ai_tbl.setStyle(TableStyle([
+            ('BACKGROUND',   (0,0), (-1,-1), colors.HexColor('#f0f0ff')),
+            ('BOX',          (0,0), (-1,-1), 0.5, colors.HexColor('#c7d2fe')),
+            ('TOPPADDING',   (0,0), (-1,-1), 14),
+            ('BOTTOMPADDING',(0,0), (-1,-1), 14),
+            ('LEFTPADDING',  (0,0), (-1,-1), 14),
+            ('RIGHTPADDING', (0,0), (-1,-1), 14),
         ]))
-        story.append(q_hdr)
-        story.append(Paragraph(q['q'].replace('\n', ' '), s['body']))
+        story.append(ai_tbl)
 
-        for j, opt in enumerate(q['opts']):
-            prefix = chr(65+j)
-            if j == ca and j == ua:
-                p = Paragraph(f'{prefix}. {opt}  [{txt["iq_result"]["review_your_and_correct"]}]', s['correct'])
-            elif j == ca:
-                p = Paragraph(f'{prefix}. {opt}  [← {txt["iq_result"]["review_correct_answer"]}]', s['correct'])
-            elif j == ua:
-                p = Paragraph(f'{prefix}. {opt}  [{txt["iq_result"]["review_your_answer"]}]', s['wrong'])
-            else:
-                p = Paragraph(f'{prefix}. {opt}', s['body_muted'])
-            story.append(p)
-
-        if 'explanation' in q:
-            story.append(Paragraph(
-                f'{txt["iq_result"]["explanation_label"]}: {q["explanation"]}',
-                s['gold_note']
-            ))
-        story.append(HRFlowable(width=W_PAGE, thickness=0.3,
-                                color=C_BORDER, spaceAfter=4))
-
-
-# ══════════════════════════════════════════════════════════════
-# APPENDIX
-# ══════════════════════════════════════════════════════════════
-def _build_appendix(story, data, txt, styles):
-    s = styles
-    _section_header(story, 'A', txt['pdf']['appendix'], s)
-
-    iq = data.get('iq', 0)
-    correct = data.get('correct', 0)
-    total   = data.get('total', 0)
-    pctile  = data.get('percentile', 0)
-    w_pct   = data.get('weighted_pct', 0)
-    n_pop   = data.get('n_population', 0)
-
-    lang = data.get('lang', 'id')
-    rows_id = [
-        ['Estimasi IQ', str(iq)],
-        ['Kategori', txt['iq_categories'].get(data.get('label',''), data.get('label',''))],
-        ['Persentil Populasi', f'{pctile}th dari {n_pop:,} responden'],
-        ['Jawaban Benar (mentah)', f'{correct}/{total}'],
-        ['Weighted Score', f'{w_pct:.1f}%'],
-        ['Metode Skoring', 'Weighted difficulty-based + Normal dist. normalization'],
-        ['Dataset Norma IQ', 'Open Psychometrics IQ Alpha (N=2,051)'],
-        ['Dataset Norma Big Five', f'IPIP Tunguz Kaggle (N={data.get("n_bf_pop", 874434):,})'],
-    ]
-    rows_en = [
-        ['IQ Estimate', str(iq)],
-        ['Category', txt['iq_categories'].get(data.get('label',''), data.get('label',''))],
-        ['Population Percentile', f'{pctile}th of {n_pop:,} respondents'],
-        ['Correct Answers (raw)', f'{correct}/{total}'],
-        ['Weighted Score', f'{w_pct:.1f}%'],
-        ['Scoring Method', 'Weighted difficulty-based + Normal dist. normalization'],
-        ['IQ Norm Dataset', 'Open Psychometrics IQ Alpha (N=2,051)'],
-        ['Big Five Norm Dataset', f'IPIP Tunguz Kaggle (N={data.get("n_bf_pop", 874434):,})'],
-    ]
-    rows = rows_id if lang == 'id' else rows_en
-    _kv_table(story, rows)
-    story.append(Spacer(1, 4*mm))
-    story.append(Paragraph(txt['pdf']['methodology_note'], s['body_muted']))
+    # ── Footer ─────────────────────────────────────────────────────────────
     story.append(Spacer(1, 6*mm))
     _divider(story)
-    story.append(Spacer(1, 2*mm))
-    story.append(Paragraph(txt['pdf']['disclaimer'], s['disclaimer']))
-
-
-# ══════════════════════════════════════════════════════════════
-# MAIN EXPORT FUNCTION
-# ══════════════════════════════════════════════════════════════
-def generate_pdf(path, data, txt):
-    """
-    Generate PDF 2-in-1 ke `path`.
-
-    data dict keys:
-      iq, label, color, percentile, correct, total, weighted_pct, n_population
-      cognitive, archetype, combined, careers,
-      learning_style_name, learning_style_detail,
-      blind_spots, roadmap,
-      bf_scores, bf_pcts, n_bf_pop,
-      iq_answers, iq_session,
-      lang  ('id' atau 'en')
-
-    txt  : dict dari i18n/id.json atau en.json
-    """
-    doc = SimpleDocTemplate(
-        path, pagesize=A4,
-        leftMargin=20*mm, rightMargin=20*mm,
-        topMargin=20*mm, bottomMargin=20*mm,
-        title=txt['pdf']['title'],
-        author='Assessment App',
-    )
-
-    styles = _styles()
-    story  = []
-
-    # 1. Cover
-    _build_cover(story, data, txt, styles)
-
-    # 2. Executive Summary
-    _build_exec_summary(story, data, txt, styles)
-
-    # ── Full Report starts here ──
-    lang = data.get('lang', 'id')
-    full_lbl = txt['pdf']['full_report']
-    story.append(Paragraph(full_lbl,
-                           ParagraphStyle('fr', fontSize=10, textColor=C_GOLD,
-                               fontName='Helvetica-Bold', letterSpacing=3,
-                               spaceAfter=6)))
-    _divider(story, color=C_GOLD)
-
-    # 3. Sections
-    _build_section_cognitive(story,    data, txt, styles)
-    _build_section_personality(story,  data, txt, styles)
-    _build_section_combined(story,     data, txt, styles)
-    _build_section_career(story,       data, txt, styles)
-    _build_section_learning(story,     data, txt, styles)
-    _build_section_blindspots(story,   data, txt, styles)
-    _build_section_roadmap(story,      data, txt, styles)
-
-    # 4. IQ Review
-    story.append(PageBreak())
-    _build_iq_review(story, data, txt, styles)
-
-    # 5. Appendix
-    story.append(PageBreak())
-    _build_appendix(story, data, txt, styles)
+    story.append(Paragraph(
+        'Dokumen ini dibuat otomatis. Hasil bersifat indikatif dan tidak menggantikan asesmen profesional.' if lang=='id'
+        else 'Auto-generated document. Results are indicative and do not replace professional assessment.',
+        s['disc']))
 
     doc.build(story)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AUTO-DETECT
+# ══════════════════════════════════════════════════════════════════════════════
+def generate_pdf(path: str, data: dict, txt: dict):
+    test_type = data.get('test_type', '')
+    if test_type == 'iq':
+        generate_iq_pdf(path, data, txt)
+    elif test_type in ('bigfive', 'bf'):
+        generate_bf_pdf(path, data, txt)
+    else:
+        if 'iq' in data:
+            generate_iq_pdf(path, data, txt)
+        else:
+            generate_bf_pdf(path, data, txt)
